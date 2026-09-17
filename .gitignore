@@ -1,0 +1,63 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Type-checking and lint caches
+.mypy_cache/
+.ruff_cache/
+
+# Python build output
+build/
+dist/
+*.egg-info/
+
+# Personal CV and uploaded files
+/CV.pdf
+/uploads/
+
+# Logs
+*.log
+
+# VS Code and IDE settings
+.vscode/
+.idea/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Node and frontend dependencies
+node_modules/
+.npm/
+.pnpm-store/
+
+# Frontend build output
+frontend/dist/
+frontend/.output/
+frontend/.vinxi/
+frontend/.tanstack/
+
+# Local deployment files
+.vercel/
+.netlify/
+
+# Temporary files
+*.tmp
+*.temp
