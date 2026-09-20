@@ -1,6 +1,10 @@
 import json
 import re
 
+from ai_providers import (
+    AIProviderError,
+    get_ai_provider,
+)
 from analyzer import (
     conservative_experience_months,
     extract_required_years,
@@ -20,9 +24,6 @@ from models import (
 )
 
 
-MODEL_NAME = "llama3.2:3b"
-
-
 class AIServiceError(Exception):
     """Raised when the local AI service fails."""
 
@@ -37,37 +38,15 @@ def _call_structured_ai(
     user_prompt,
 ):
     try:
-        from ollama import chat
+        provider = get_ai_provider()
 
-        response = chat(
-            model=MODEL_NAME,
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
-            ],
-            format=(
-                response_model
-                .model_json_schema()
-            ),
-            options={
-                "temperature": 0,
-            },
+        return provider.generate_structured(
+            response_model=response_model,
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
         )
 
-        return (
-            response_model
-            .model_validate_json(
-                response.message.content
-            )
-        )
-
-    except Exception as error:
+    except AIProviderError as error:
         raise AIServiceError(
             "The local AI model could "
             "not complete the request."
