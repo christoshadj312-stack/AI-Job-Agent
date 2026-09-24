@@ -47,15 +47,17 @@ export interface ExperienceRequirement {
 
 export interface EducationRequirement {
   original_requirement: string;
-  minimum_degree_level: string;
+  minimum_degree_level: string | null;
   accepted_fields: string[];
   related_field_allowed: boolean;
 }
 
 export interface JobRequirements {
   technical_skills: string[];
-  experience_requirements: ExperienceRequirement[];
-  education_requirements: EducationRequirement[];
+  experience_requirements:
+    ExperienceRequirement[];
+  education_requirements:
+    EducationRequirement[];
   soft_skills: string[];
 }
 
@@ -68,8 +70,10 @@ export interface RequirementMatch {
 
 export interface MatchAnalysis {
   technical_skills: RequirementMatch[];
-  experience_requirements: RequirementMatch[];
-  education_requirements: RequirementMatch[];
+  experience_requirements:
+    RequirementMatch[];
+  education_requirements:
+    RequirementMatch[];
   soft_skills: RequirementMatch[];
 }
 
@@ -81,12 +85,42 @@ export interface MatchScores {
   overall_match: number | null;
 }
 
+export type RequirementCategory =
+  | "technical_skill"
+  | "experience"
+  | "education"
+  | "soft_skill";
+
+export interface MatchInsight {
+  category: RequirementCategory;
+  requirement: string;
+  status: MatchStatus;
+  evidence: string;
+  reason: string;
+}
+
+export interface CVImprovementSuggestion {
+  category: RequirementCategory;
+  requirement: string;
+  priority: "high" | "medium";
+  suggestion: string;
+  evidence_basis: string;
+}
+
+export interface ApplicationInsights {
+  strengths: MatchInsight[];
+  gaps: MatchInsight[];
+  cv_improvement_suggestions:
+    CVImprovementSuggestion[];
+}
+
 export interface ApplicationAnalysisResult {
   candidate_name: string;
   candidate_profile: CandidateProfile;
   job_requirements: JobRequirements;
   analysis: MatchAnalysis;
   scores: MatchScores;
+  insights: ApplicationInsights;
 }
 
 export interface CreateAnalysisInput {
@@ -99,7 +133,8 @@ interface ErrorResponse {
   detail?: string;
 }
 
-const DEFAULT_API_URL = "http://localhost:8000";
+const DEFAULT_API_URL =
+  "http://localhost:8000";
 
 const configuredApiUrl =
   import.meta.env["VITE_API_BASE_URL"];
@@ -111,7 +146,10 @@ const API_BASE_URL = (
 export class ApiError extends Error {
   readonly status: number;
 
-  constructor(message: string, status: number) {
+  constructor(
+    message: string,
+    status: number,
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -132,7 +170,10 @@ export async function createAnalysis(
     "job_description",
     input.jobDescription.trim(),
   );
-  formData.append("cv_file", input.cvFile);
+  formData.append(
+    "cv_file",
+    input.cvFile,
+  );
 
   const response = await fetch(
     `${API_BASE_URL}/api/v1/analyses`,
@@ -152,17 +193,21 @@ export async function createAnalysis(
         (await response.json()) as ErrorResponse;
 
       if (
-        typeof errorResponse.detail === "string" &&
+        typeof errorResponse.detail ===
+          "string" &&
         errorResponse.detail.trim()
       ) {
         message = errorResponse.detail;
       }
     } catch {
-      // Keep the safe default message when the server
-      // does not return a JSON error response.
+      // Keep the safe default message when
+      // the server does not return JSON.
     }
 
-    throw new ApiError(message, response.status);
+    throw new ApiError(
+      message,
+      response.status,
+    );
   }
 
   return (

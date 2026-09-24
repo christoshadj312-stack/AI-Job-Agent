@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from api.main import app
 from models import (
     ApplicationAnalysisResult,
+    ApplicationInsights,
     CVAnalysis,
     CandidateProfile,
     JobRequirements,
@@ -19,21 +20,29 @@ class APITests(unittest.TestCase):
         cls.client = TestClient(app)
 
     def test_health_endpoint(self):
-        response = self.client.get("/health")
+        response = self.client.get(
+            "/health"
+        )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
         self.assertEqual(
             response.json(),
             {"status": "ok"},
         )
 
-    def test_analysis_rejects_non_pdf_upload(self):
+    def test_analysis_rejects_non_pdf_upload(
+        self,
+    ):
         response = self.client.post(
             "/api/v1/analyses",
             data={
                 "candidate_name": "Christos",
                 "job_description": (
-                    "A sufficiently long job description."
+                    "A sufficiently long job "
+                    "description."
                 ),
             },
             files={
@@ -45,10 +54,14 @@ class APITests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 415)
+        self.assertEqual(
+            response.status_code,
+            415,
+        )
 
     @patch(
-        "api.routes.analysis.analyze_pdf_application"
+        "api.routes.analysis."
+        "analyze_pdf_application"
     )
     def test_analysis_returns_structured_result(
         self,
@@ -57,10 +70,15 @@ class APITests(unittest.TestCase):
         analyze_pdf.return_value = (
             ApplicationAnalysisResult(
                 candidate_name="Christos",
-                candidate_profile=CandidateProfile(),
-                job_requirements=JobRequirements(),
+                candidate_profile=(
+                    CandidateProfile()
+                ),
+                job_requirements=(
+                    JobRequirements()
+                ),
                 analysis=CVAnalysis(),
                 scores=MatchScores(),
+                insights=ApplicationInsights(),
             )
         )
 
@@ -69,7 +87,8 @@ class APITests(unittest.TestCase):
             data={
                 "candidate_name": "Christos",
                 "job_description": (
-                    "A sufficiently long job description."
+                    "A sufficiently long job "
+                    "description."
                 ),
             },
             files={
@@ -81,12 +100,22 @@ class APITests(unittest.TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code,
+            200,
+        )
         self.assertEqual(
             response.json()["candidate_name"],
             "Christos",
         )
-        self.assertIn("scores", response.json())
+        self.assertIn(
+            "scores",
+            response.json(),
+        )
+        self.assertIn(
+            "insights",
+            response.json(),
+        )
 
 
 if __name__ == "__main__":

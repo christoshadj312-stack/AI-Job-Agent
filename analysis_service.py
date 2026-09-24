@@ -9,8 +9,13 @@ from analyzer import calculate_match_score
 from cv_parser import extract_text_from_pdf_bytes
 from models import (
     ApplicationAnalysisResult,
+    ApplicationInsights,
     CVAnalysis,
+    CVImprovementSuggestion,
+    MatchInsight,
     MatchScores,
+    RequirementAnalysis,
+    RequirementCategory,
 )
 
 
@@ -54,6 +59,159 @@ def _build_scores(
     )
 
 
+def _suggestion_text(
+    category: RequirementCategory,
+    item: RequirementAnalysis,
+) -> str:
+    is_partial = item.status == "partial"
+
+    if category == "technical_skill":
+        if is_partial:
+            return (
+                f'Clarify where and how you used '
+                f'"{item.requirement}" in an existing '
+                "role or project, using only "
+                "verifiable details."
+            )
+
+        return (
+            f'If you genuinely have experience with '
+            f'"{item.requirement}", add the exact '
+            "skill to your skills section and "
+            "support it with a role or project "
+            "bullet. Otherwise, leave it out."
+        )
+
+    if category == "experience":
+        if is_partial:
+            return (
+                f'Strengthen the existing evidence '
+                f'for "{item.requirement}" by adding '
+                "verifiable dates, duration, "
+                "responsibilities, or outcomes."
+            )
+
+        return (
+            "If accurate, add a role or project "
+            f'bullet that demonstrates '
+            f'"{item.requirement}", including dates '
+            "or duration when they can be verified."
+        )
+
+    if category == "education":
+        if is_partial:
+            return (
+                "Clarify the verified degree level, "
+                "field of study, institution, and "
+                "completion status relevant to "
+                f'"{item.requirement}".'
+            )
+
+        return (
+            "Check that your CV states the exact "
+            "degree level and field relevant to "
+            f'"{item.requirement}". Add only '
+            "qualifications you have earned or are "
+            "currently completing."
+        )
+
+    if is_partial:
+        return (
+            "Make the existing evidence for "
+            f'"{item.requirement}" more explicit by '
+            "describing the action you took and the "
+            "verifiable outcome."
+        )
+
+    return (
+        "If true, add a concrete role or project "
+        f'example that demonstrates '
+        f'"{item.requirement}" through an action or '
+        "outcome. Do not list the skill without "
+        "evidence."
+    )
+
+
+def _build_insights(
+    analysis: CVAnalysis,
+) -> ApplicationInsights:
+    groups: tuple[
+        tuple[
+            RequirementCategory,
+            list[RequirementAnalysis],
+        ],
+        ...,
+    ] = (
+        (
+            "technical_skill",
+            analysis.technical_skills,
+        ),
+        (
+            "experience",
+            analysis.experience_requirements,
+        ),
+        (
+            "education",
+            analysis.education_requirements,
+        ),
+        (
+            "soft_skill",
+            analysis.soft_skills,
+        ),
+    )
+
+    strengths: list[MatchInsight] = []
+    gaps: list[MatchInsight] = []
+    suggestions: list[
+        CVImprovementSuggestion
+    ] = []
+
+    for category, items in groups:
+        for item in items:
+            insight = MatchInsight(
+                category=category,
+                requirement=item.requirement,
+                status=item.status,
+                evidence=item.evidence,
+                reason=item.reason,
+            )
+
+            if item.status == "found":
+                strengths.append(insight)
+                continue
+
+            gaps.append(insight)
+
+            suggestions.append(
+                CVImprovementSuggestion(
+                    category=category,
+                    requirement=item.requirement,
+                    priority=(
+                        "high"
+                        if item.status == "missing"
+                        else "medium"
+                    ),
+                    suggestion=_suggestion_text(
+                        category,
+                        item,
+                    ),
+                    evidence_basis=(
+                        item.evidence
+                        if item.evidence.strip()
+                        else item.reason
+                    ),
+                )
+            )
+
+    return ApplicationInsights(
+        strengths=strengths,
+        gaps=gaps,
+        cv_improvement_suggestions=(
+            suggestions
+        ),
+    )
+
+
 def analyze_application(
     candidate_name: str,
     cv_text: str,
@@ -92,6 +250,7 @@ def analyze_application(
         job_requirements=requirements,
         analysis=analysis,
         scores=_build_scores(analysis),
+        insights=_build_insights(analysis),
     )
 
 

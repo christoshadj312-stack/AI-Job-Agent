@@ -190,44 +190,12 @@ function AnalysisResults() {
     },
   ];
 
-  const allMatches: RequirementMatch[] = [
-    ...result.analysis.technical_skills,
-    ...result.analysis
-      .experience_requirements,
-    ...result.analysis
-      .education_requirements,
-    ...result.analysis.soft_skills,
-  ];
-
-  const strengths = allMatches.filter(
-    (item) =>
-      normalizeStatus(item.status) ===
-      "Found",
-  );
-
-  const partialMatches =
-    allMatches.filter(
-      (item) =>
-        normalizeStatus(item.status) ===
-        "Partial",
-    );
-
-  const gaps = allMatches.filter(
-    (item) =>
-      normalizeStatus(item.status) ===
-      "Missing",
-  );
-
-  const recommendations = [
-    ...gaps.map(
-      (item) =>
-        `Only if accurate, add clear CV evidence for: ${item.requirement}`,
-    ),
-    ...partialMatches.map(
-      (item) =>
-        `Clarify or quantify the CV evidence for: ${item.requirement}`,
-    ),
-  ];
+  const strengths =
+    result.insights?.strengths ?? [];
+  const gaps = result.insights?.gaps ?? [];
+  const recommendations =
+    result.insights
+      ?.cv_improvement_suggestions ?? [];
 
   return (
     <AppShell>
@@ -514,27 +482,30 @@ function AnalysisResults() {
                     (item, index) => (
                       <li
                         key={`${item.requirement}-${index}`}
-                        className="flex gap-2.5 text-sm leading-5"
+                        className="rounded-lg border border-border p-3 text-sm leading-5"
                       >
-                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-status-missing" />
-
-                        <div>
+                        <div className="flex items-start justify-between gap-3">
                           <p className="font-medium">
                             {item.requirement}
                           </p>
 
-                          <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                            {item.reason}
-                          </p>
+                          <StatusPill
+                            status={item.status}
+                          />
                         </div>
+
+                        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                          {item.reason ||
+                            item.evidence}
+                        </p>
                       </li>
                     ),
                   )}
                 </ul>
               ) : (
                 <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                  No missing requirements were
-                  identified.
+                  No missing or partial requirements
+                  were identified.
                 </p>
               )}
             </section>
@@ -564,18 +535,31 @@ function AnalysisResults() {
               {recommendations.map(
                 (recommendation, index) => (
                   <div
-                    key={`${recommendation}-${index}`}
+                    key={`${recommendation.requirement}-${index}`}
                     className="rounded-lg border border-border p-4"
                   >
-                    <span className="text-xs font-semibold text-primary">
-                      {String(
-                        index + 1,
-                      ).padStart(2, "0")}
-                    </span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-semibold text-primary">
+                        {String(
+                          index + 1,
+                        ).padStart(2, "0")}
+                      </span>
+
+                      <span className="rounded-md bg-muted px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
+                        {recommendation.priority}
+                      </span>
+                    </div>
 
                     <p className="mt-3 text-sm leading-6">
-                      {recommendation}
+                      {recommendation.suggestion}
                     </p>
+
+                    {recommendation.evidence_basis && (
+                      <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
+                        Evidence basis:{" "}
+                        {recommendation.evidence_basis}
+                      </p>
+                    )}
                   </div>
                 ),
               )}
