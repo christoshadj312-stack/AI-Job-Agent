@@ -1,0 +1,114 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "DM Sans", sans-serif;
+  --radius-sm: calc(var(--radius) - 3px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 3px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-status-found: var(--status-found);
+  --color-status-found-bg: var(--status-found-bg);
+  --color-status-partial: var(--status-partial);
+  --color-status-partial-bg: var(--status-partial-bg);
+  --color-status-missing: var(--status-missing);
+  --color-status-missing-bg: var(--status-missing-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-avatar: var(--avatar);
+}
+
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.982 0.004 240);
+  --foreground: oklch(0.22 0.025 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0.025 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.025 250);
+  --primary: oklch(0.46 0.105 181);
+  --primary-foreground: oklch(0.99 0.005 180);
+  --secondary: oklch(0.95 0.008 240);
+  --secondary-foreground: oklch(0.30 0.025 250);
+  --muted: oklch(0.96 0.006 240);
+  --muted-foreground: oklch(0.53 0.025 250);
+  --accent: oklch(0.955 0.014 181);
+  --accent-foreground: oklch(0.35 0.08 181);
+  --destructive: oklch(0.55 0.15 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.91 0.008 240);
+  --input: oklch(0.88 0.01 240);
+  --ring: oklch(0.58 0.10 181);
+  --sidebar: oklch(0.995 0.002 240);
+  --sidebar-foreground: oklch(0.24 0.025 250);
+  --sidebar-primary: oklch(0.46 0.105 181);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.955 0.014 181);
+  --sidebar-accent-foreground: oklch(0.35 0.08 181);
+  --sidebar-border: oklch(0.91 0.008 240);
+  --status-found: oklch(0.43 0.10 155);
+  --status-found-bg: oklch(0.96 0.025 155);
+  --status-partial: oklch(0.55 0.10 75);
+  --status-partial-bg: oklch(0.97 0.035 80);
+  --status-missing: oklch(0.52 0.13 25);
+  --status-missing-bg: oklch(0.97 0.025 25);
+  --info: oklch(0.48 0.10 245);
+  --info-bg: oklch(0.96 0.018 245);
+  --avatar: oklch(0.91 0.035 181);
+}
+
+@layer base {
+  * { border-color: var(--color-border); }
+  html { font-family: var(--font-sans); }
+  body { background-color: var(--color-background); color: var(--color-foreground); letter-spacing: 0; }
+  button, a, input, textarea, select { letter-spacing: 0; }
+  ::selection { background: color-mix(in oklab, var(--primary) 18%, transparent); }
+}
+
+@utility surface {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 4%, transparent);
+}
+
+@utility shadow-brand {
+  box-shadow: 0 8px 22px color-mix(in oklab, var(--primary) 18%, transparent);
+}
+
+@utility subtle-grid {
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@keyframes progress-in { from { width: 0; } }
+.animate-progress { animation: progress-in .7s ease-out both; }

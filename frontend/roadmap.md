@@ -1,0 +1,6 @@
+- [x] Build shared JobMatch AI shell and design system
+- [x] Build dashboard and simulated analysis flow
+- [x] Build detailed results and cover letter interactions
+- [x] Build searchable application tracker with detail and add flows
+- [x] Build supporting Cover Letters, History, and Settings pages
+- [x] Validate metadata, desktop/mobile layouts, interactions, and preview health
