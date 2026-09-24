@@ -9,6 +9,7 @@ RequirementStatus = Literal[
     "missing",
 ]
 
+
 DegreeLevel = Literal[
     "associate",
     "bachelor",
@@ -18,47 +19,24 @@ DegreeLevel = Literal[
 
 
 class ExperienceRequirement(BaseModel):
-    original_requirement: str = Field(
-        min_length=1
-    )
-    minimum_years: int | None = Field(
-        default=None,
-        ge=0,
-    )
-    accepted_experience_types: list[str] = Field(
-        default_factory=list
-    )
+    original_requirement: str = Field(min_length=1)
+    minimum_years: int | None = Field(default=None, ge=0)
+    accepted_experience_types: list[str] = Field(default_factory=list)
     projects_allowed: bool = False
 
 
 class EducationRequirement(BaseModel):
-    original_requirement: str = Field(
-        min_length=1
-    )
+    original_requirement: str = Field(min_length=1)
     minimum_degree_level: DegreeLevel | None = None
-    accepted_fields: list[str] = Field(
-        default_factory=list
-    )
+    accepted_fields: list[str] = Field(default_factory=list)
     related_field_allowed: bool = False
 
 
 class JobRequirements(BaseModel):
-    technical_skills: list[str] = Field(
-        default_factory=list
-    )
-    experience_requirements: list[
-        ExperienceRequirement
-    ] = Field(
-        default_factory=list
-    )
-    education_requirements: list[
-        EducationRequirement
-    ] = Field(
-        default_factory=list
-    )
-    soft_skills: list[str] = Field(
-        default_factory=list
-    )
+    technical_skills: list[str] = Field(default_factory=list)
+    experience_requirements: list[ExperienceRequirement] = Field(default_factory=list)
+    education_requirements: list[EducationRequirement] = Field(default_factory=list)
+    soft_skills: list[str] = Field(default_factory=list)
 
 
 class RequirementAnalysis(BaseModel):
@@ -84,32 +62,20 @@ class ExperienceItem(BaseModel):
     start_year: int | None = None
     end_year: int | None = None
     is_current: bool = False
-    responsibilities: list[str] = Field(
-        default_factory=list
-    )
+    responsibilities: list[str] = Field(default_factory=list)
 
 
 class ProjectItem(BaseModel):
     name: str
     description: str = ""
-    technologies: list[str] = Field(
-        default_factory=list
-    )
+    technologies: list[str] = Field(default_factory=list)
 
 
 class CandidateProfile(BaseModel):
-    technical_skills: list[str] = Field(
-        default_factory=list
-    )
-    education: list[EducationItem] = Field(
-        default_factory=list
-    )
-    experience: list[ExperienceItem] = Field(
-        default_factory=list
-    )
-    projects: list[ProjectItem] = Field(
-        default_factory=list
-    )
+    technical_skills: list[str] = Field(default_factory=list)
+    education: list[EducationItem] = Field(default_factory=list)
+    experience: list[ExperienceItem] = Field(default_factory=list)
+    projects: list[ProjectItem] = Field(default_factory=list)
 
 
 class SemanticDecision(BaseModel):
@@ -156,18 +122,30 @@ class CVAnalysis(BaseModel):
         default_factory=list
     )
 
-    experience_requirements: list[
-        RequirementAnalysis
-    ] = Field(
+    experience_requirements: list[RequirementAnalysis] = Field(
         default_factory=list
     )
 
-    education_requirements: list[
-        RequirementAnalysis
-    ] = Field(
+    education_requirements: list[RequirementAnalysis] = Field(
         default_factory=list
     )
 
     soft_skills: list[RequirementAnalysis] = Field(
         default_factory=list
     )
+
+
+class MatchScores(BaseModel):
+    technical_skills: int | None = None
+    experience: int | None = None
+    education: int | None = None
+    soft_skills: int | None = None
+    overall_match: int | None = None
+
+
+class ApplicationAnalysisResult(BaseModel):
+    candidate_name: str
+    candidate_profile: CandidateProfile
+    job_requirements: JobRequirements
+    analysis: CVAnalysis
+    scores: MatchScores

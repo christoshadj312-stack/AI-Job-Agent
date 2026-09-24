@@ -91,6 +91,17 @@ class GroqProviderTests(unittest.TestCase):
             completions.request["response_format"]
             ["json_schema"]["strict"]
         )
+        self.assertEqual(
+            completions.request["max_completion_tokens"],
+            8192,
+        )
+        self.assertEqual(
+            completions.request["reasoning_effort"],
+            "low",
+        )
+        self.assertFalse(
+            completions.request["include_reasoning"]
+        )
 
     def test_empty_groq_response_is_wrapped(self):
         provider, _ = build_provider(None)

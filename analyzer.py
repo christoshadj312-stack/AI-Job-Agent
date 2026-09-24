@@ -1,11 +1,7 @@
 import re
 from datetime import date
 
-from models import (
-    EducationRequirement,
-    ExperienceRequirement,
-    RequirementAnalysis,
-)
+from models import EducationRequirement, RequirementAnalysis
 
 
 PARTIAL_MATCH_CREDIT = 0.5
@@ -88,20 +84,139 @@ FIELD_FAMILIES = {
 }
 
 
+TECHNICAL_SKILL_EQUIVALENCE_GROUPS = (
+    (
+        "scikit learn",
+        "sklearn",
+    ),
+    (
+        "rest api",
+        "rest apis",
+        "restful api",
+        "restful apis",
+    ),
+    (
+        "machine learning",
+        "ml",
+    ),
+    (
+        "artificial intelligence",
+        "ai",
+    ),
+    (
+        "postgresql",
+        "postgres",
+    ),
+    (
+        "javascript",
+        "js",
+    ),
+    (
+        "typescript",
+        "ts",
+    ),
+    (
+        "node js",
+        "nodejs",
+    ),
+    (
+        "react",
+        "react js",
+        "reactjs",
+    ),
+    (
+        "amazon web services",
+        "aws",
+    ),
+    (
+        "google cloud platform",
+        "gcp",
+    ),
+    (
+        "microsoft azure",
+        "azure",
+    ),
+    (
+        "continuous integration continuous delivery",
+        "ci cd",
+        "cicd",
+    ),
+    (
+        "c sharp",
+        "c#",
+    ),
+    (
+        "c plus plus",
+        "c++",
+    ),
+)
+
+
 def normalize_text(text):
-    if not text:
-        return ""
+    text = text.lower()
 
-    normalized = str(text).lower()
-
-    normalized = re.sub(
+    text = re.sub(
         r"[^a-z0-9+#]+",
         " ",
-        normalized,
+        text,
     )
 
     return " ".join(
-        normalized.split()
+        text.split()
+    )
+
+
+def contains_normalized_phrase(
+    text,
+    phrase,
+):
+    normalized_text = normalize_text(text)
+    normalized_phrase = normalize_text(phrase)
+
+    if not normalized_phrase:
+        return False
+
+    pattern = (
+        rf"(?:^| )"
+        rf"{re.escape(normalized_phrase)}"
+        rf"(?:$| )"
+    )
+
+    return re.search(
+        pattern,
+        normalized_text,
+    ) is not None
+
+
+def canonical_technical_skill(skill):
+    normalized = normalize_text(skill)
+
+    for group in TECHNICAL_SKILL_EQUIVALENCE_GROUPS:
+        if normalized in group:
+            return group[0]
+
+    return normalized
+
+
+def technical_skills_are_equivalent(
+    requirement,
+    candidate_skill,
+):
+    canonical_requirement = (
+        canonical_technical_skill(
+            requirement
+        )
+    )
+    canonical_candidate = (
+        canonical_technical_skill(
+            candidate_skill
+        )
+    )
+
+    return (
+        bool(canonical_requirement)
+        and canonical_requirement
+        == canonical_candidate
     )
 
 
@@ -113,10 +228,8 @@ def tokenize(text):
     return {
         word
         for word in normalized_text.split()
-        if (
-            len(word) > 1
-            and word not in STOP_WORDS
-        )
+        if len(word) > 1
+        and word not in STOP_WORDS
     }
 
 
@@ -164,25 +277,15 @@ def find_direct_evidence(
         if not cleaned_line:
             continue
 
-        normalized_line = (
-            normalize_text(
-                cleaned_line
-            )
-        )
-
-        if (
-            normalized_requirement
-            in normalized_line
+        if contains_normalized_phrase(
+            cleaned_line,
+            normalized_requirement,
         ):
             return cleaned_line
 
-    normalized_cv = normalize_text(
-        cv_text
-    )
-
-    if (
-        normalized_requirement
-        in normalized_cv
+    if contains_normalized_phrase(
+        cv_text,
+        normalized_requirement,
     ):
         return requirement
 
@@ -219,11 +322,8 @@ def find_direct_matches(
                     ),
                 )
             )
-
         else:
-            unresolved.append(
-                index
-            )
+            unresolved.append(index)
 
     return matched, unresolved
 
@@ -276,45 +376,81 @@ def canonical_degree_level(
     return None
 
 
+def get_required_degree_levels(
+    requirement,
+):
+    normalized = normalize_text(
+        requirement
+    )
+
+    levels = set()
+
+    checks = {
+        "phd": (
+            "phd",
+            "doctorate",
+            "doctoral",
+        ),
+        "master": (
+            "master",
+            "msc",
+            "m sc",
+            "meng",
+            "m eng",
+        ),
+        "bachelor": (
+            "bachelor",
+            "bsc",
+            "b sc",
+            "beng",
+            "b eng",
+        ),
+        "associate": (
+            "associate",
+        ),
+    }
+
+    for level, terms in checks.items():
+        if any(
+            term in normalized
+            for term in terms
+        ):
+            levels.add(level)
+
+    return levels
+
+
 def degree_level_satisfies(
     candidate_level,
-    required_level,
+    required_levels,
 ):
-    if required_level is None:
+    if not required_levels:
         return True
 
     if candidate_level is None:
         return False
 
-    candidate_rank = (
-        DEGREE_RANKS.get(
-            candidate_level
-        )
-    )
-
-    required_rank = (
-        DEGREE_RANKS.get(
-            required_level
-        )
-    )
+    if candidate_level in required_levels:
+        return True
 
     if (
-        candidate_rank is None
-        or required_rank is None
+        "bachelor" in required_levels
+        and DEGREE_RANKS.get(
+            candidate_level,
+            0,
+        )
+        >= DEGREE_RANKS["bachelor"]
     ):
-        return False
+        return True
 
-    return (
-        candidate_rank
-        >= required_rank
-    )
+    return False
 
 
-def get_field_families(
-    field_text,
+def get_requirement_field_families(
+    requirement,
 ):
     normalized = normalize_text(
-        field_text
+        requirement
     )
 
     families = []
@@ -333,56 +469,24 @@ def get_field_families(
     return families
 
 
-def fields_match_directly(
-    candidate_field,
-    accepted_field,
+def candidate_matches_field_family(
+    field_of_study,
+    family,
 ):
-    normalized_candidate = (
+    normalized_field = (
         normalize_text(
-            candidate_field
+            field_of_study
         )
     )
 
-    normalized_accepted = (
-        normalize_text(
-            accepted_field
-        )
+    terms = FIELD_FAMILIES.get(
+        family,
+        (),
     )
 
-    if (
-        not normalized_candidate
-        or not normalized_accepted
-    ):
-        return False
-
-    return (
-        normalized_candidate
-        in normalized_accepted
-        or normalized_accepted
-        in normalized_candidate
-    )
-
-
-def fields_share_family(
-    candidate_field,
-    accepted_field,
-):
-    candidate_families = set(
-        get_field_families(
-            candidate_field
-        )
-    )
-
-    accepted_families = set(
-        get_field_families(
-            accepted_field
-        )
-    )
-
-    return bool(
-        candidate_families.intersection(
-            accepted_families
-        )
+    return any(
+        term in normalized_field
+        for term in terms
     )
 
 
@@ -390,6 +494,18 @@ def find_deterministic_education_match(
     requirement: EducationRequirement,
     education,
 ):
+    required_levels = (
+        {requirement.minimum_degree_level}
+        if requirement.minimum_degree_level
+        else set()
+    )
+
+    required_families = []
+    for accepted_field in requirement.accepted_fields:
+        families = get_requirement_field_families(accepted_field)
+        if families:
+            required_families.extend(families)
+
     for index, item in enumerate(
         education
     ):
@@ -401,35 +517,78 @@ def find_deterministic_education_match(
 
         if not degree_level_satisfies(
             candidate_level,
-            requirement.minimum_degree_level,
+            required_levels,
         ):
             continue
+
+        normalized_field = (
+            normalize_text(
+                item.field_of_study
+            )
+        )
+
+        for accepted_field in requirement.accepted_fields:
+            normalized_accepted = normalize_text(accepted_field)
+            if (
+                normalized_field
+                and normalized_accepted
+                and (
+                    normalized_field in normalized_accepted
+                    or normalized_accepted in normalized_field
+                )
+            ):
+                return index
+
+        for family in required_families:
+            if candidate_matches_field_family(
+                item.field_of_study,
+                family,
+            ):
+                return index
 
         if not requirement.accepted_fields:
             return index
 
-        for accepted_field in (
-            requirement.accepted_fields
-        ):
-            if fields_match_directly(
-                item.field_of_study,
-                accepted_field,
-            ):
-                return index
-
-            if fields_share_family(
-                item.field_of_study,
-                accepted_field,
-            ):
-                return index
-
     return None
 
 
-def extract_required_years(
-    requirement: ExperienceRequirement,
-):
-    return requirement.minimum_years
+def extract_required_years(requirement):
+    if hasattr(requirement, "minimum_years"):
+        return requirement.minimum_years
+
+    text = requirement.lower()
+
+    patterns = (
+        r"at least\s+(\d+)\s+years?",
+        r"minimum(?:\s+of)?\s+(\d+)\s+years?",
+        r"(\d+)\s*\+\s*years?",
+        r"(\d+)\s+years?\s+of\s+experience",
+        r"(\d+)\s+years?\s+experience",
+    )
+
+    for pattern in patterns:
+        match = re.search(
+            pattern,
+            text,
+        )
+
+        if match:
+            return int(
+                match.group(1)
+            )
+
+    range_match = re.search(
+        r"(\d+)\s*[-–]\s*(\d+)"
+        r"\s+years?",
+        text,
+    )
+
+    if range_match:
+        return int(
+            range_match.group(1)
+        )
+
+    return None
 
 
 def _conservative_role_interval(
@@ -480,10 +639,8 @@ def _conservative_role_interval(
 def conservative_experience_months(
     experience_items,
     indexes,
-    current_date=None,
 ):
-    if current_date is None:
-        current_date = date.today()
+    current_date = date.today()
 
     intervals = []
 
@@ -492,9 +649,8 @@ def conservative_experience_months(
     ):
         if (
             index < 0
-            or index >= len(
-                experience_items
-            )
+            or index
+            >= len(experience_items)
         ):
             continue
 
@@ -534,7 +690,6 @@ def conservative_experience_months(
                     end,
                 ),
             )
-
         else:
             merged.append(
                 (
@@ -557,7 +712,6 @@ def format_experience_period(
         is None
     ):
         start = "Unknown"
-
     else:
         start = str(
             experience_item.start_year

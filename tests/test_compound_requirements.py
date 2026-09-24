@@ -1,7 +1,15 @@
 import unittest
 
-from ai_service import _analyze_experience, _normalize_compound_requirements
-from analyzer import find_deterministic_education_match
+from ai_service import (
+    _analyze_experience,
+    _analyze_technical,
+    _normalize_compound_requirements,
+)
+from analyzer import (
+    find_direct_evidence,
+    find_deterministic_education_match,
+    technical_skills_are_equivalent,
+)
 from models import (
     CandidateProfile,
     EducationItem,
@@ -24,6 +32,64 @@ JOB_DESCRIPTION = (
 
 
 class CompoundRequirementTests(unittest.TestCase):
+    def test_related_technology_cannot_be_used_as_sql_evidence(self):
+        profile = CandidateProfile(
+            technical_skills=["Supabase"]
+        )
+        decisions = {
+            ("technical", 0): SemanticDecision(
+                category="technical",
+                requirement_index=0,
+                status="found",
+                matched_skill_index=0,
+                reason="Supabase uses a SQL database.",
+            )
+        }
+
+        result = _analyze_technical(
+            ["SQL"],
+            "Supabase",
+            profile,
+            decisions,
+        )
+
+        self.assertEqual(result[0].status, "missing")
+
+    def test_known_technical_alias_is_deterministic(self):
+        self.assertTrue(
+            technical_skills_are_equivalent(
+                "Scikit-learn",
+                "sklearn",
+            )
+        )
+        self.assertFalse(
+            technical_skills_are_equivalent(
+                "SQL",
+                "Supabase",
+            )
+        )
+
+    def test_short_skill_requires_a_complete_word(self):
+        self.assertIsNone(
+            find_direct_evidence(
+                "AI",
+                "Maintained customer relationships.",
+            )
+        )
+        self.assertIsNone(
+            find_direct_evidence(
+                "SQL",
+                "Worked with NoSQL databases.",
+            )
+        )
+        self.assertEqual(
+            find_direct_evidence(
+                "SQL",
+                "Built SQL queries for reporting.",
+            ),
+            "Built SQL queries for reporting.",
+        )
+
     def test_split_experience_fragments_are_merged(self):
         requirements = JobRequirements(
             experience_requirements=[

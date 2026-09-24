@@ -1,12 +1,8 @@
 from analyzer import (
     calculate_match_score,
 )
-from ai_service import (
-    AIServiceError,
-    analyze_cv_with_ai,
-    extract_candidate_profile,
-    extract_job_requirements,
-)
+from ai_service import AIServiceError
+from analysis_service import analyze_application
 from cv_parser import (
     CVParserError,
     extract_text_from_pdf,
@@ -26,7 +22,6 @@ def print_candidate_profile(
             .technical_skills
         ):
             print("-", skill)
-
     else:
         print("- None found")
 
@@ -67,7 +62,6 @@ def print_candidate_profile(
             )
 
             print()
-
     else:
         print("- None found")
 
@@ -112,12 +106,10 @@ def print_candidate_profile(
                         "-",
                         responsibility,
                     )
-
             else:
                 print("- None found")
 
             print()
-
     else:
         print("- None found")
 
@@ -147,123 +139,12 @@ def print_candidate_profile(
                         "-",
                         technology,
                     )
-
             else:
                 print("- None found")
 
             print()
-
     else:
         print("- None found")
-
-
-def print_string_requirements(
-    title,
-    requirements,
-):
-    print(f"\n{title}:")
-
-    if not requirements:
-        print("- None specified")
-        return
-
-    for requirement in requirements:
-        print(
-            "-",
-            requirement,
-        )
-
-
-def print_experience_requirements(
-    requirements,
-):
-    print("\nExperience Requirements:")
-
-    if not requirements:
-        print("- None specified")
-        return
-
-    for requirement in requirements:
-        print(
-            "Requirement:",
-            requirement.original_requirement,
-        )
-
-        print(
-            "Minimum Years:",
-            requirement.minimum_years,
-        )
-
-        print(
-            "Accepted Experience Types:",
-        )
-
-        if (
-            requirement
-            .accepted_experience_types
-        ):
-            for experience_type in (
-                requirement
-                .accepted_experience_types
-            ):
-                print(
-                    "-",
-                    experience_type,
-                )
-
-        else:
-            print("- None specified")
-
-        print(
-            "Projects Allowed:",
-            requirement.projects_allowed,
-        )
-
-        print()
-
-
-def print_education_requirements(
-    requirements,
-):
-    print("\nEducation Requirements:")
-
-    if not requirements:
-        print("- None specified")
-        return
-
-    for requirement in requirements:
-        print(
-            "Requirement:",
-            requirement.original_requirement,
-        )
-
-        print(
-            "Minimum Degree Level:",
-            requirement.minimum_degree_level,
-        )
-
-        print(
-            "Accepted Fields:",
-        )
-
-        if requirement.accepted_fields:
-            for field in (
-                requirement.accepted_fields
-            ):
-                print(
-                    "-",
-                    field,
-                )
-
-        else:
-            print("- None specified")
-
-        print(
-            "Related Field Allowed:",
-            requirement.related_field_allowed,
-        )
-
-        print()
 
 
 def print_job_requirements(
@@ -271,25 +152,41 @@ def print_job_requirements(
 ):
     print("\nJob Requirements:")
 
-    print_string_requirements(
-        "Technical Skills",
-        requirements.technical_skills,
-    )
+    categories = [
+        (
+            "Technical Skills",
+            requirements.technical_skills,
+        ),
+        (
+            "Experience Requirements",
+            requirements
+            .experience_requirements,
+        ),
+        (
+            "Education Requirements",
+            requirements
+            .education_requirements,
+        ),
+        (
+            "Soft Skills",
+            requirements.soft_skills,
+        ),
+    ]
 
-    print_experience_requirements(
-        requirements
-        .experience_requirements
-    )
+    for title, items in categories:
+        print(f"\n{title}:")
 
-    print_education_requirements(
-        requirements
-        .education_requirements
-    )
-
-    print_string_requirements(
-        "Soft Skills",
-        requirements.soft_skills,
-    )
+        if items:
+            for item in items:
+                if hasattr(item, "original_requirement"):
+                    print("-", item.original_requirement)
+                    details = item.model_dump(exclude={"original_requirement"})
+                    for name, value in details.items():
+                        print(f"  {name}: {value}")
+                else:
+                    print("-", item)
+        else:
+            print("- None specified")
 
 
 def print_requirement_analysis(
@@ -371,40 +268,34 @@ def main():
             )
         )
 
-        print(
-            "[2/4] Extracting job requirements...",
-            flush=True,
-        )
+        progress_messages = {
+            "extracting_job_requirements": (
+                "[2/4] Extracting job requirements..."
+            ),
+            "building_candidate_profile": (
+                "[3/4] Building candidate profile..."
+            ),
+            "matching_candidate": (
+                "[4/4] Matching candidate to job..."
+            ),
+        }
 
-        requirements = (
-            extract_job_requirements(
-                job_description
+        def print_progress(stage):
+            print(
+                progress_messages[stage],
+                flush=True,
             )
+
+        result = analyze_application(
+            candidate_name=candidate_name,
+            cv_text=cv_text,
+            job_description=job_description,
+            progress_callback=print_progress,
         )
 
-        print(
-            "[3/4] Building candidate profile...",
-            flush=True,
-        )
-
-        candidate_profile = (
-            extract_candidate_profile(
-                cv_text
-            )
-        )
-
-        print(
-            "[4/4] Matching candidate to job...",
-            flush=True,
-        )
-
-        cv_analysis = (
-            analyze_cv_with_ai(
-                cv_text,
-                requirements,
-                candidate_profile,
-            )
-        )
+        candidate_profile = result.candidate_profile
+        requirements = result.job_requirements
+        cv_analysis = result.analysis
 
         print(
             "Analysis complete.",
@@ -482,20 +373,7 @@ def main():
         cv_analysis.soft_skills,
     )
 
-    all_analysis = (
-        cv_analysis.technical_skills
-        + cv_analysis
-        .experience_requirements
-        + cv_analysis
-        .education_requirements
-        + cv_analysis.soft_skills
-    )
-
-    overall_score = (
-        calculate_match_score(
-            all_analysis
-        )
-    )
+    overall_score = result.scores.overall_match
 
     if overall_score is not None:
         print(

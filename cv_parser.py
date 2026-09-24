@@ -7,20 +7,7 @@ class CVParserError(Exception):
     """Raised when a CV PDF cannot be processed correctly."""
 
 
-def extract_text_from_pdf(pdf_path):
-    path = Path(pdf_path)
-
-    if not path.exists():
-        raise CVParserError(f"CV file not found: {path}")
-
-    if path.suffix.lower() != ".pdf":
-        raise CVParserError("The CV file must be a PDF.")
-
-    try:
-        document = pymupdf.open(path)
-    except Exception as error:
-        raise CVParserError("The PDF file could not be opened.") from error
-
+def _extract_text_from_document(document):
     try:
         if document.page_count == 0:
             raise CVParserError("The PDF contains no pages.")
@@ -48,3 +35,39 @@ def extract_text_from_pdf(pdf_path):
 
     finally:
         document.close()
+
+
+def extract_text_from_pdf(pdf_path):
+    path = Path(pdf_path)
+
+    if not path.exists():
+        raise CVParserError(f"CV file not found: {path}")
+
+    if path.suffix.lower() != ".pdf":
+        raise CVParserError("The CV file must be a PDF.")
+
+    try:
+        document = pymupdf.open(path)
+    except Exception as error:
+        raise CVParserError("The PDF file could not be opened.") from error
+
+    return _extract_text_from_document(
+        document
+    )
+
+
+def extract_text_from_pdf_bytes(pdf_bytes):
+    if not pdf_bytes:
+        raise CVParserError("The uploaded PDF is empty.")
+
+    try:
+        document = pymupdf.open(
+            stream=pdf_bytes,
+            filetype="pdf",
+        )
+    except Exception as error:
+        raise CVParserError("The PDF file could not be opened.") from error
+
+    return _extract_text_from_document(
+        document
+    )

@@ -105,6 +105,9 @@ class GroqProvider(AIProvider):
                     },
                 ],
                 temperature=0,
+                max_completion_tokens=8192,
+                reasoning_effort="low",
+                include_reasoning=False,
                 response_format={
                     "type": "json_schema",
                     "json_schema": {

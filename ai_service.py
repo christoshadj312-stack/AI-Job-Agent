@@ -7,12 +7,14 @@ from ai_providers import (
 )
 from analyzer import (
     conservative_experience_months,
+    contains_normalized_phrase,
     extract_required_years,
     find_deterministic_education_match,
     find_direct_matches,
     format_experience_period,
     normalize_text,
     prepare_cv_lines,
+    technical_skills_are_equivalent,
     tokenize,
 )
 from models import (
@@ -48,7 +50,7 @@ def _call_structured_ai(
 
     except AIProviderError as error:
         raise AIServiceError(
-            "The local AI model could "
+            "The configured AI provider could "
             "not complete the request."
         ) from error
 
@@ -107,8 +109,10 @@ def _sanitize_candidate_profile(
 
         if (
             normalized_skill
-            and normalized_skill
-            in normalized_cv
+            and contains_normalized_phrase(
+                normalized_cv,
+                normalized_skill,
+            )
             and skill not in verified_skills
         ):
             verified_skills.append(
@@ -533,7 +537,7 @@ def _analyze_technical(
     requirements,
     cv_text,
     candidate_profile,
-    decisions,
+    _decisions,
 ):
     direct_matches, unresolved = (
         find_direct_matches(
@@ -558,53 +562,28 @@ def _analyze_technical(
             )
             continue
 
-        decision = decisions.get(
+        equivalent_skill = next(
             (
-                "technical",
-                index,
-            )
-        )
-
-        if decision is None:
-            results.append(
-                RequirementAnalysis(
-                    requirement=requirement,
-                    status="missing",
-                    evidence=(
-                        "No matching technical "
-                        "skill found in the CV"
-                    ),
-                    reason=(
-                        "No verified semantic "
-                        "match was returned."
-                    ),
+                skill
+                for skill in candidate_profile.technical_skills
+                if technical_skills_are_equivalent(
+                    requirement,
+                    skill,
                 )
-            )
-            continue
-
-        skill_index = (
-            decision.matched_skill_index
+            ),
+            None,
         )
 
-        if (
-            decision.status == "found"
-            and _valid_index(
-                skill_index,
-                candidate_profile
-                .technical_skills,
-            )
-        ):
+        if equivalent_skill is not None:
             results.append(
                 RequirementAnalysis(
                     requirement=requirement,
                     status="found",
-                    evidence=(
-                        candidate_profile
-                        .technical_skills[
-                            skill_index
-                        ]
+                    evidence=equivalent_skill,
+                    reason=(
+                        "A verified equivalent technical "
+                        "skill appears in the CV."
                     ),
-                    reason=decision.reason,
                 )
             )
 
@@ -1205,7 +1184,7 @@ def analyze_cv_with_ai(
     candidate_profile,
 ):
     direct_technical, (
-        unresolved_technical
+        _unresolved_technical
     ) = find_direct_matches(
         requirements.technical_skills,
         cv_text,
@@ -1230,7 +1209,7 @@ def analyze_cv_with_ai(
     batch_result = _run_semantic_batch(
         requirements,
         candidate_profile,
-        unresolved_technical,
+        [],
         unresolved_education,
         cv_lines,
     )
