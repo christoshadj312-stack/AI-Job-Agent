@@ -81,6 +81,36 @@ class CoverLetterTests(unittest.TestCase):
         self.assertNotIn("SQL", result.text)
         self.assertEqual(len(result.evidence_used), 1)
 
+    def test_groups_skills_into_natural_sentence(self):
+        request = request_with([
+            MatchInsight(
+                category="technical_skill",
+                requirement="Python",
+                status="found",
+                evidence="Python",
+            ),
+            MatchInsight(
+                category="technical_skill",
+                requirement="machine learning",
+                status="found",
+                evidence="Machine Learning",
+            ),
+            MatchInsight(
+                category="technical_skill",
+                requirement="scikit-learn",
+                status="found",
+                evidence="Scikit-learn",
+            ),
+        ])
+
+        result = compose_cover_letter(request)
+
+        self.assertIn(
+            "includes Python, machine learning, and scikit-learn",
+            result.text,
+        )
+        self.assertNotIn("my CV records", result.text)
+
     def test_rejects_analysis_without_verified_evidence(self):
         with self.assertRaises(NoVerifiedEvidenceError):
             compose_cover_letter(request_with([]))
