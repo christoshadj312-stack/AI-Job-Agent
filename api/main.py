@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.analysis import router as analysis_router
+from api.routes.cover_letters import router as cover_letters_router
 from settings import get_settings
 
 
@@ -27,6 +28,9 @@ def create_app() -> FastAPI:
 
     application.include_router(
         analysis_router
+    )
+    application.include_router(
+        cover_letters_router
     )
 
     @application.get(

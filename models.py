@@ -208,3 +208,14 @@ class ApplicationAnalysisResult(BaseModel):
     analysis: CVAnalysis
     scores: MatchScores
     insights: ApplicationInsights
+
+
+class CoverLetterRequest(BaseModel):
+    analysis: ApplicationAnalysisResult
+    job_title: str = Field(min_length=1, max_length=200)
+    company_name: str = Field(default="", max_length=200)
+
+
+class CoverLetterResponse(BaseModel):
+    text: str
+    evidence_used: list[MatchInsight]
