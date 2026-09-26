@@ -44,6 +44,93 @@ def _select_evidence(
     return selected
 
 
+def _join_naturally(values: list[str]) -> str:
+    if len(values) == 1:
+        return values[0]
+    if len(values) == 2:
+        return f"{values[0]} and {values[1]}"
+    return f"{', '.join(values[:-1])}, and {values[-1]}"
+
+
+def _unique_values(values: list[str]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+
+    for value in values:
+        cleaned = _clean(value).rstrip(".")
+        key = cleaned.casefold()
+        if cleaned and key not in seen:
+            result.append(cleaned)
+            seen.add(key)
+
+    return result
+
+
+def _body_paragraphs(
+    selected: list[MatchInsight],
+) -> list[str]:
+    sentences: list[str] = []
+
+    technical = _unique_values([
+        item.requirement
+        for item in selected
+        if item.category == "technical_skill"
+    ])
+    if technical:
+        sentences.append(
+            "My technical background includes "
+            f"{_join_naturally(technical)}, which align with "
+            "the technical focus of the position."
+        )
+
+    experience = _unique_values([
+        item.evidence
+        for item in selected
+        if item.category == "experience"
+    ])
+    if experience:
+        sentences.append(
+            "My CV also shows relevant experience in "
+            f"{_join_naturally(experience)}."
+        )
+
+    education = _unique_values([
+        item.evidence
+        for item in selected
+        if item.category == "education"
+    ])
+    if education:
+        sentences.append(
+            "My academic background includes "
+            f"{_join_naturally(education)}."
+        )
+
+    soft_skills = _unique_values([
+        item.requirement
+        for item in selected
+        if item.category == "soft_skill"
+    ])
+    if soft_skills:
+        sentences.append(
+            f"I also bring {_join_naturally(soft_skills)}."
+        )
+
+    detailed_evidence = _unique_values([
+        item.evidence
+        for item in selected
+        if item.category == "technical_skill"
+        and _clean(item.evidence).casefold()
+        != _clean(item.requirement).casefold()
+    ])
+    if detailed_evidence:
+        sentences.append(
+            "Examples noted in my CV include "
+            f"{_join_naturally(detailed_evidence)}."
+        )
+
+    return [" ".join(sentences)]
+
+
 def compose_cover_letter(
     request: CoverLetterRequest,
 ) -> CoverLetterResponse:
@@ -60,24 +147,18 @@ def compose_cover_letter(
     name = _clean(request.analysis.candidate_name)
     destination = f" at {company}" if company else ""
 
-    evidence_lines = [
-        f"For {_clean(item.requirement)}, my CV records: "
-        f"{_clean(item.evidence).rstrip('.')}."
-        for item in selected
-    ]
-
     paragraphs = [
         "Dear Hiring Manager,",
         (
             f"I am writing to apply for the {role} position{destination}. "
-            "The following evidence in my CV relates to the "
-            "requirements of this role."
+            "I am interested in the opportunity to contribute my "
+            "background while continuing to grow in this role."
         ),
-        "\n".join(evidence_lines),
+        *_body_paragraphs(selected),
         (
-            "I would welcome the opportunity to discuss how my "
-            "background could contribute to your team. Thank you "
-            "for considering my application."
+            "I would welcome the opportunity to discuss how my skills "
+            "and background could contribute to your team. Thank you "
+            "for your time and consideration."
         ),
         f"Sincerely,\n{name}",
     ]
