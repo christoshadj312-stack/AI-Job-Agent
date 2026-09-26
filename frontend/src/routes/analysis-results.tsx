@@ -265,12 +265,8 @@ function AnalysisResults() {
             </p>
           </div>
 
-          <Button
-            variant="outline"
-            disabled
-            title="Application tracker persistence will be added in the tracker milestone."
-          >
-            Save to tracker
+          <Button asChild variant="outline">
+            <Link to="/cover-letters">Write cover letter</Link>
           </Button>
         </header>
 

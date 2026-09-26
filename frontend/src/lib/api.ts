@@ -123,6 +123,17 @@ export interface ApplicationAnalysisResult {
   insights: ApplicationInsights;
 }
 
+export interface CoverLetterResponse {
+  text: string;
+  evidence_used: MatchInsight[];
+}
+
+export interface CreateCoverLetterInput {
+  analysis: ApplicationAnalysisResult;
+  jobTitle: string;
+  companyName: string;
+}
+
 export interface CreateAnalysisInput {
   candidateName: string;
   jobDescription: string;
@@ -213,4 +224,38 @@ export async function createAnalysis(
   return (
     await response.json()
   ) as ApplicationAnalysisResult;
+}
+
+export async function createCoverLetter(
+  input: CreateCoverLetterInput,
+  signal?: AbortSignal,
+): Promise<CoverLetterResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/cover-letters`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        analysis: input.analysis,
+        job_title: input.jobTitle.trim(),
+        company_name: input.companyName.trim(),
+      }),
+      signal: signal ?? null,
+    },
+  );
+
+  if (!response.ok) {
+    let message = "The cover letter could not be generated.";
+    try {
+      const body = (await response.json()) as ErrorResponse;
+      if (typeof body.detail === "string" && body.detail.trim()) {
+        message = body.detail;
+      }
+    } catch {
+      // Keep the default message for non-JSON errors.
+    }
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as CoverLetterResponse;
 }
