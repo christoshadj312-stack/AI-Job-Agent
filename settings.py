@@ -6,9 +6,11 @@ from functools import lru_cache
 class Settings:
     ai_provider: str
     ollama_model: str
+    ollama_vision_model: str
     ollama_host: str | None
     groq_api_key: str | None
     groq_model: str
+    groq_vision_model: str
     cors_origins: tuple[str, ...]
     max_cv_size_bytes: int
 
@@ -53,6 +55,11 @@ def get_settings():
         "llama3.2:3b",
     ).strip()
 
+    ollama_vision_model = os.getenv(
+        "OLLAMA_VISION_MODEL",
+        "gemma3:4b",
+    ).strip()
+
     ollama_host = (
         os.getenv("OLLAMA_HOST", "").strip()
         or None
@@ -66,6 +73,11 @@ def get_settings():
     groq_model = os.getenv(
         "GROQ_MODEL",
         "openai/gpt-oss-20b",
+    ).strip()
+
+    groq_vision_model = os.getenv(
+        "GROQ_VISION_MODEL",
+        "qwen/qwen3.6-27b",
     ).strip()
 
     cors_origins = tuple(
@@ -85,9 +97,11 @@ def get_settings():
     return Settings(
         ai_provider=provider,
         ollama_model=ollama_model,
+        ollama_vision_model=ollama_vision_model,
         ollama_host=ollama_host,
         groq_api_key=groq_api_key,
         groq_model=groq_model,
+        groq_vision_model=groq_vision_model,
         cors_origins=cors_origins,
         max_cv_size_bytes=(
             max_cv_size_mb * 1024 * 1024

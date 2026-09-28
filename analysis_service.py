@@ -2,11 +2,16 @@ from collections.abc import Callable
 
 from ai_service import (
     analyze_cv_with_ai,
+    extract_cv_text_from_image,
     extract_candidate_profile,
     extract_job_requirements,
 )
 from analyzer import calculate_match_score
-from cv_parser import extract_text_from_pdf_bytes
+from cv_parser import (
+    CVParserError,
+    extract_text_from_pdf_bytes,
+    render_pdf_pages_as_png,
+)
 from models import (
     ApplicationAnalysisResult,
     ApplicationInsights,
@@ -203,11 +208,30 @@ def _build_insights(
                 )
             )
 
+    core_items = (
+        analysis.technical_skills
+        + analysis.experience_requirements
+        + analysis.education_requirements
+    )
+    low_alignment = bool(core_items) and all(
+        item.status == "missing"
+        for item in core_items
+    )
+
     return ApplicationInsights(
         strengths=strengths,
         gaps=gaps,
         cv_improvement_suggestions=(
             suggestions
+        ),
+        low_alignment=low_alignment,
+        alignment_message=(
+            "This CV does not contain verified evidence for the role's "
+            "main skills, experience, or education requirements. Consider "
+            "using a CV relevant to this field or choosing a role closer "
+            "to the candidate's background."
+            if low_alignment
+            else ""
         ),
     )
 
@@ -220,18 +244,18 @@ def analyze_application(
 ) -> ApplicationAnalysisResult:
     _notify(
         progress_callback,
-        "extracting_job_requirements",
-    )
-    requirements = extract_job_requirements(
-        job_description
-    )
-
-    _notify(
-        progress_callback,
         "building_candidate_profile",
     )
     candidate_profile = extract_candidate_profile(
         cv_text
+    )
+
+    _notify(
+        progress_callback,
+        "extracting_job_requirements",
+    )
+    requirements = extract_job_requirements(
+        job_description
     )
 
     _notify(
@@ -254,17 +278,54 @@ def analyze_application(
     )
 
 
+def analyze_uploaded_application(
+    candidate_name: str,
+    file_bytes: bytes,
+    content_type: str,
+    job_description: str,
+) -> ApplicationAnalysisResult:
+    if content_type == "application/pdf":
+        try:
+            cv_text = extract_text_from_pdf_bytes(
+                file_bytes
+            )
+        except CVParserError as error:
+            if "No readable text" not in str(error):
+                raise
+
+            page_images = render_pdf_pages_as_png(
+                file_bytes
+            )
+            page_texts = [
+                extract_cv_text_from_image(
+                    image_bytes=page_image,
+                    mime_type="image/png",
+                )
+                for page_image in page_images
+            ]
+            cv_text = "\n\n".join(page_texts)
+    else:
+        cv_text = extract_cv_text_from_image(
+            image_bytes=file_bytes,
+            mime_type=content_type,
+        )
+
+    return analyze_application(
+        candidate_name=candidate_name,
+        cv_text=cv_text,
+        job_description=job_description,
+    )
+
+
 def analyze_pdf_application(
     candidate_name: str,
     pdf_bytes: bytes,
     job_description: str,
 ) -> ApplicationAnalysisResult:
-    cv_text = extract_text_from_pdf_bytes(
-        pdf_bytes
-    )
-
-    return analyze_application(
+    """Keep the original PDF-only entry point for compatibility."""
+    return analyze_uploaded_application(
         candidate_name=candidate_name,
-        cv_text=cv_text,
+        file_bytes=pdf_bytes,
+        content_type="application/pdf",
         job_description=job_description,
     )

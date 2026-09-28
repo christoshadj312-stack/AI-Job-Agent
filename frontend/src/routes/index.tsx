@@ -1,75 +1,93 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, BriefcaseBusiness, CalendarDays, CheckCircle2, Gauge, Plus, Sparkles, TrendingUp } from "lucide-react";
+import { createFileRoute } from "@tanstack/react-router";
+import { CheckCircle2, FileSearch, FileText, Sparkles } from "lucide-react";
+
 import { AppShell, NewAnalysisButton } from "@/components/app-shell";
-import { Button } from "@/components/ui/button";
-import { recentAnalyses } from "@/lib/mock-data";
 
 export const Route = createFileRoute("/")({
-  head: () => ({ meta: [
-    { title: "Dashboard — JobMatch AI" },
-    { name: "description", content: "Review your job search progress and recent CV match analyses." },
-    { property: "og:title", content: "Dashboard — JobMatch AI" },
-    { property: "og:description", content: "Review your job search progress and recent CV match analyses." },
-    { property: "og:type", content: "website" },
-    { name: "twitter:card", content: "summary_large_image" },
-  ]}),
-  component: Dashboard,
+  head: () => ({
+    meta: [
+      { title: "JobMatch AI — Evidence-based CV matching" },
+      {
+        name: "description",
+        content:
+          "Compare your CV with a job description, find verified strengths and gaps, and create a tailored cover letter.",
+      },
+      {
+        property: "og:title",
+        content: "JobMatch AI — Evidence-based CV matching",
+      },
+      {
+        property: "og:description",
+        content: "Compare your CV with a job description using evidence found in your CV.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
+  component: Home,
 });
 
-const stats = [
-  { label: "Applications Tracked", value: "12", note: "+3 this month", icon: BriefcaseBusiness },
-  { label: "Average Match Score", value: "74%", note: "+6% from August", icon: Gauge },
-  { label: "Strong Matches", value: "5", note: "Score above 75%", icon: CheckCircle2 },
-  { label: "Applications This Month", value: "4", note: "On track with your goal", icon: CalendarDays },
-];
+const steps = [
+  {
+    title: "Upload your CV",
+    description: "Choose your current CV as a PDF, PNG, or JPG file.",
+    icon: FileText,
+  },
+  {
+    title: "Add the job description",
+    description: "Paste the role and requirements you want to compare.",
+    icon: FileSearch,
+  },
+  {
+    title: "Review your match",
+    description: "See supported strengths, gaps, suggestions, and a cover letter draft.",
+    icon: CheckCircle2,
+  },
+] as const;
 
-function Dashboard() {
+function Home() {
   return (
     <AppShell>
-      <div className="mx-auto max-w-[1450px] px-4 py-8 sm:px-7 lg:px-10 lg:py-10">
-        <section className="mb-9 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <div>
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-primary"><Sparkles className="size-4" />Your job search workspace</div>
-            <h1 className="text-3xl font-semibold text-foreground sm:text-4xl">Good afternoon, Christos</h1>
-            <p className="mt-2 text-base text-muted-foreground">Find out how well your CV matches your next opportunity.</p>
+      <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
+        <section className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full bg-accent px-3 py-1.5 text-sm font-medium text-primary">
+            <Sparkles className="size-4" />
+            Evidence-based CV matching
           </div>
-          <NewAnalysisButton />
+          <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+            See how your CV matches a job
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
+            Upload your CV and paste a job description. JobMatch AI finds verified strengths and
+            gaps, then helps you prepare a tailored cover letter without inventing experience.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <NewAnalysisButton />
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            PDF, PNG or JPG · Your CV is analyzed for this session and is not stored.
+          </p>
         </section>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Application summary">
-          {stats.map((stat) => <article key={stat.label} className="surface p-5">
-            <div className="flex items-start justify-between"><p className="text-sm font-medium text-muted-foreground">{stat.label}</p><span className="grid size-9 place-items-center rounded-lg bg-accent text-primary"><stat.icon className="size-[18px]" /></span></div>
-            <p className="mt-5 text-3xl font-semibold text-foreground">{stat.value}</p>
-            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">{stat.label === "Average Match Score" && <TrendingUp className="size-3 text-status-found" />}{stat.note}</p>
-          </article>)}
+        <section className="mt-16" aria-labelledby="how-it-works">
+          <h2 id="how-it-works" className="text-center text-2xl font-semibold text-foreground">
+            How it works
+          </h2>
+          <div className="mt-7 grid gap-4 md:grid-cols-3">
+            {steps.map((step, index) => (
+              <article key={step.title} className="surface p-6">
+                <div className="flex items-center justify-between">
+                  <span className="grid size-10 place-items-center rounded-lg bg-accent text-primary">
+                    <step.icon className="size-5" />
+                  </span>
+                  <span className="text-sm font-semibold text-muted-foreground">{index + 1}</span>
+                </div>
+                <h3 className="mt-5 font-semibold text-foreground">{step.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.description}</p>
+              </article>
+            ))}
+          </div>
         </section>
-
-        <div className="mt-7 grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(280px,.75fr)]">
-          <section className="surface overflow-hidden">
-            <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-6">
-              <div><h2 className="font-semibold text-foreground">Recent analyses</h2><p className="mt-0.5 text-xs text-muted-foreground">Your latest CV-to-role comparisons</p></div>
-              <Button variant="ghost" size="sm" asChild><Link to="/history">View all <ArrowRight /></Link></Button>
-            </div>
-            <div className="divide-y divide-border">
-              {recentAnalyses.map((item) => <Link key={item.id} to="/analysis-results" className="group grid gap-3 px-5 py-4 transition-colors hover:bg-accent/40 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:px-6">
-                <div><p className="text-sm font-semibold text-foreground group-hover:text-primary">{item.role}</p><p className="mt-1 text-xs text-muted-foreground">{item.company} · {item.date}</p></div>
-                <span className="w-fit rounded-md bg-status-found-bg px-2.5 py-1 text-xs font-medium text-status-found">{item.status}</span>
-                <div className="flex items-center gap-3 sm:justify-end"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary" style={{ width: `${item.match}%` }} /></div><span className="w-9 text-right text-sm font-semibold text-foreground">{item.match}%</span><ArrowRight className="size-4 text-muted-foreground" /></div>
-              </Link>)}
-            </div>
-          </section>
-
-          <aside className="surface relative overflow-hidden p-6">
-            <div className="subtle-grid absolute inset-0 opacity-25" />
-            <div className="relative">
-              <span className="grid size-10 place-items-center rounded-lg bg-primary text-primary-foreground shadow-brand"><Sparkles className="size-5" /></span>
-              <h2 className="mt-6 text-xl font-semibold text-foreground">Ready for your next role?</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Compare your CV with a job description and get evidence-based recommendations in moments.</p>
-              <Button className="mt-6 w-full" asChild><Link to="/new-analysis"><Plus />Start an analysis</Link></Button>
-              <p className="mt-3 text-center text-[11px] text-muted-foreground">Takes less than two minutes</p>
-            </div>
-          </aside>
-        </div>
       </div>
     </AppShell>
   );

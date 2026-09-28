@@ -78,9 +78,9 @@ def _body_paragraphs(
     ])
     if technical:
         sentences.append(
-            "My technical background includes "
+            "My background includes "
             f"{_join_naturally(technical)}, which align with "
-            "the technical focus of the position."
+            "the role-specific requirements of the position."
         )
 
     experience = _unique_values([
@@ -140,6 +140,19 @@ def compose_cover_letter(
     if not selected:
         raise NoVerifiedEvidenceError(
             "No verified CV matches are available for a cover letter."
+        )
+
+    if request.analysis.insights.low_alignment or not any(
+        item.category in {
+            "technical_skill",
+            "experience",
+            "education",
+        }
+        for item in selected
+    ):
+        raise NoVerifiedEvidenceError(
+            "The CV and job are not sufficiently aligned for an "
+            "evidence-based cover letter."
         )
 
     role = _clean(request.job_title)

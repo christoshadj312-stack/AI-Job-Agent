@@ -18,6 +18,9 @@ def get_ai_provider() -> AIProvider:
     if settings.ai_provider == "ollama":
         return OllamaProvider(
             model_name=settings.ollama_model,
+            vision_model_name=(
+                settings.ollama_vision_model
+            ),
             host=settings.ollama_host,
         )
 
@@ -31,6 +34,9 @@ def get_ai_provider() -> AIProvider:
         return GroqProvider(
             api_key=settings.groq_api_key,
             model_name=settings.groq_model,
+            vision_model_name=(
+                settings.groq_vision_model
+            ),
         )
 
     raise AIProviderError(

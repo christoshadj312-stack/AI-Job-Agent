@@ -11,11 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalysisResultsRouteImport } from './routes/analysis-results'
-import { Route as ApplicationsRouteImport } from './routes/applications'
 import { Route as CoverLettersRouteImport } from './routes/cover-letters'
-import { Route as HistoryRouteImport } from './routes/history'
 import { Route as NewAnalysisRouteImport } from './routes/new-analysis'
-import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -27,19 +24,9 @@ const AnalysisResultsRoute = AnalysisResultsRouteImport.update({
   path: '/analysis-results',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApplicationsRoute = ApplicationsRouteImport.update({
-  id: '/applications',
-  path: '/applications',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CoverLettersRoute = CoverLettersRouteImport.update({
   id: '/cover-letters',
   path: '/cover-letters',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewAnalysisRoute = NewAnalysisRouteImport.update({
@@ -47,78 +34,40 @@ const NewAnalysisRoute = NewAnalysisRouteImport.update({
   path: '/new-analysis',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analysis-results': typeof AnalysisResultsRoute
-  '/applications': typeof ApplicationsRoute
   '/cover-letters': typeof CoverLettersRoute
-  '/history': typeof HistoryRoute
   '/new-analysis': typeof NewAnalysisRoute
-  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analysis-results': typeof AnalysisResultsRoute
-  '/applications': typeof ApplicationsRoute
   '/cover-letters': typeof CoverLettersRoute
-  '/history': typeof HistoryRoute
   '/new-analysis': typeof NewAnalysisRoute
-  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analysis-results': typeof AnalysisResultsRoute
-  '/applications': typeof ApplicationsRoute
   '/cover-letters': typeof CoverLettersRoute
-  '/history': typeof HistoryRoute
   '/new-analysis': typeof NewAnalysisRoute
-  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/analysis-results'
-    | '/applications'
-    | '/cover-letters'
-    | '/history'
-    | '/new-analysis'
-    | '/settings'
+  fullPaths: '/' | '/analysis-results' | '/cover-letters' | '/new-analysis'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/analysis-results'
-    | '/applications'
-    | '/cover-letters'
-    | '/history'
-    | '/new-analysis'
-    | '/settings'
+  to: '/' | '/analysis-results' | '/cover-letters' | '/new-analysis'
   id:
-    | '__root__'
-    | '/'
-    | '/analysis-results'
-    | '/applications'
-    | '/cover-letters'
-    | '/history'
-    | '/new-analysis'
-    | '/settings'
+    '__root__' | '/' | '/analysis-results' | '/cover-letters' | '/new-analysis'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalysisResultsRoute: typeof AnalysisResultsRoute
-  ApplicationsRoute: typeof ApplicationsRoute
   CoverLettersRoute: typeof CoverLettersRoute
-  HistoryRoute: typeof HistoryRoute
   NewAnalysisRoute: typeof NewAnalysisRoute
-  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -137,25 +86,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AnalysisResultsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/applications': {
-      id: '/applications'
-      path: '/applications'
-      fullPath: '/applications'
-      preLoaderRoute: typeof ApplicationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/cover-letters': {
       id: '/cover-letters'
       path: '/cover-letters'
       fullPath: '/cover-letters'
       preLoaderRoute: typeof CoverLettersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/history': {
-      id: '/history'
-      path: '/history'
-      fullPath: '/history'
-      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-analysis': {
@@ -165,24 +100,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NewAnalysisRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalysisResultsRoute: AnalysisResultsRoute,
-  ApplicationsRoute: ApplicationsRoute,
   CoverLettersRoute: CoverLettersRoute,
-  HistoryRoute: HistoryRoute,
   NewAnalysisRoute: NewAnalysisRoute,
-  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

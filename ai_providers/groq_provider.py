@@ -1,3 +1,4 @@
+import base64
 import re
 from typing import Any
 
@@ -71,15 +72,70 @@ class GroqProvider(AIProvider):
         self,
         api_key: str,
         model_name: str,
+        vision_model_name: str,
     ):
         from groq import Groq
 
         self.model_name = model_name
+        self.vision_model_name = vision_model_name
         self.client = Groq(
             api_key=api_key,
             timeout=90.0,
             max_retries=2,
         )
+
+    def extract_text_from_image(
+        self,
+        image_bytes: bytes,
+        mime_type: str,
+    ) -> str:
+        encoded_image = base64.b64encode(
+            image_bytes
+        ).decode("ascii")
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.vision_model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Transcribe all readable CV text from this image. "
+                                    "Preserve headings, dates, bullet points, and line breaks. "
+                                    "Return only the transcription. Do not explain, summarize, "
+                                    "correct, or invent any content."
+                                ),
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": (
+                                        f"data:{mime_type};base64,{encoded_image}"
+                                    )
+                                },
+                            },
+                        ],
+                    }
+                ],
+                temperature=0,
+                max_completion_tokens=8192,
+            )
+
+            content = response.choices[0].message.content
+            if not content or not content.strip():
+                raise ValueError(
+                    "Groq returned no readable image text."
+                )
+
+            return content.strip()
+
+        except Exception as error:
+            raise AIProviderError(
+                "Groq could not read the uploaded CV image."
+            ) from error
 
     def generate_structured(
         self,
