@@ -316,7 +316,7 @@ def find_direct_matches(
                     status="found",
                     evidence=evidence,
                     reason=(
-                        "The technical skill "
+                        "The role-specific skill "
                         "appears explicitly in "
                         "the CV."
                     ),

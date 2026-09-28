@@ -16,6 +16,14 @@ class AIProviderError(Exception):
 
 class AIProvider(ABC):
     @abstractmethod
+    def extract_text_from_image(
+        self,
+        image_bytes: bytes,
+        mime_type: str,
+    ) -> str:
+        """Extract CV text from an uploaded image."""
+
+    @abstractmethod
     def generate_structured(
         self,
         response_model: type[ResponseModel],

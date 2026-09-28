@@ -1,16 +1,5 @@
-import {
-  createFileRoute,
-  useNavigate,
-} from "@tanstack/react-router";
-import {
-  AlertTriangle,
-  Check,
-  FileText,
-  Info,
-  Sparkles,
-  Trash2,
-  UploadCloud,
-} from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AlertTriangle, Check, FileText, Info, Sparkles, Trash2, UploadCloud } from "lucide-react";
 import {
   type ChangeEvent,
   type DragEvent,
@@ -19,18 +8,12 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  AppShell,
-  PageHeader,
-} from "@/components/app-shell";
+import { AppShell, PageHeader } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ApiError,
-  createAnalysis,
-} from "@/lib/api";
-import { saveAnalysisSession } from "@/lib/analysis-storage";
+import { ApiError, createAnalysis } from "@/lib/api";
+import { clearAnalysisSession, saveAnalysisSession } from "@/lib/analysis-storage";
 
 export const Route = createFileRoute("/new-analysis")({
   head: () => ({
@@ -40,8 +23,7 @@ export const Route = createFileRoute("/new-analysis")({
       },
       {
         name: "description",
-        content:
-          "Compare your CV with a job description using evidence-based AI analysis.",
+        content: "Compare your CV with a job description using evidence-based AI analysis.",
       },
       {
         property: "og:title",
@@ -49,8 +31,7 @@ export const Route = createFileRoute("/new-analysis")({
       },
       {
         property: "og:description",
-        content:
-          "Compare your CV with a job description using evidence-based AI analysis.",
+        content: "Compare your CV with a job description using evidence-based AI analysis.",
       },
       {
         property: "og:type",
@@ -66,39 +47,35 @@ export const Route = createFileRoute("/new-analysis")({
 });
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_FILE_TYPES = new Map([
+  [".pdf", "application/pdf"],
+  [".png", "image/png"],
+  [".jpg", "image/jpeg"],
+  [".jpeg", "image/jpeg"],
+]);
 
 const analysisSteps = [
   "Reading CV...",
-  "Extracting job requirements...",
   "Building candidate profile...",
+  "Extracting job requirements...",
   "Matching candidate to job...",
 ];
 
 function NewAnalysis() {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
-  const abortControllerRef =
-    useRef<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const [cvFile, setCvFile] =
-    useState<File | null>(null);
-  const [candidateName, setCandidateName] =
-    useState("");
-  const [jobTitle, setJobTitle] =
-    useState("");
-  const [companyName, setCompanyName] =
-    useState("");
-  const [jobDescription, setJobDescription] =
-    useState("");
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [candidateName, setCandidateName] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
-  const [currentStep, setCurrentStep] =
-    useState(0);
-  const [fileError, setFileError] =
-    useState<string | null>(null);
-  const [submitError, setSubmitError] =
-    useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading) {
@@ -106,12 +83,7 @@ function NewAnalysis() {
     }
 
     const timer = window.setInterval(() => {
-      setCurrentStep((step) =>
-        Math.min(
-          step + 1,
-          analysisSteps.length - 1,
-        ),
-      );
+      setCurrentStep((step) => Math.min(step + 1, analysisSteps.length - 1));
     }, 1800);
 
     return () => {
@@ -125,32 +97,22 @@ function NewAnalysis() {
     };
   }, []);
 
-  function validateAndSetFile(
-    selectedFile: File,
-  ): void {
-    const hasPdfExtension =
-      selectedFile.name
-        .toLowerCase()
-        .endsWith(".pdf");
+  function validateAndSetFile(selectedFile: File): void {
+    const lowerName = selectedFile.name.toLowerCase();
+    const extension = [...ALLOWED_FILE_TYPES.keys()].find((allowedExtension) =>
+      lowerName.endsWith(allowedExtension),
+    );
+    const expectedType = extension ? ALLOWED_FILE_TYPES.get(extension) : undefined;
 
-    if (
-      selectedFile.type !== "application/pdf" ||
-      !hasPdfExtension
-    ) {
+    if (!expectedType || selectedFile.type !== expectedType) {
       setCvFile(null);
-      setFileError(
-        "Please select a valid PDF file.",
-      );
+      setFileError("Please select a valid PDF, PNG, JPG, or JPEG file.");
       return;
     }
 
-    if (
-      selectedFile.size > MAX_FILE_SIZE_BYTES
-    ) {
+    if (selectedFile.size > MAX_FILE_SIZE_BYTES) {
       setCvFile(null);
-      setFileError(
-        "The PDF must be 5 MB or smaller.",
-      );
+      setFileError("The CV file must be 5 MB or smaller.");
       return;
     }
 
@@ -159,24 +121,18 @@ function NewAnalysis() {
     setSubmitError(null);
   }
 
-  function handleFileChange(
-    event: ChangeEvent<HTMLInputElement>,
-  ): void {
-    const selectedFile =
-      event.target.files?.[0];
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>): void {
+    const selectedFile = event.target.files?.[0];
 
     if (selectedFile) {
       validateAndSetFile(selectedFile);
     }
   }
 
-  function handleDrop(
-    event: DragEvent<HTMLButtonElement>,
-  ): void {
+  function handleDrop(event: DragEvent<HTMLButtonElement>): void {
     event.preventDefault();
 
-    const droppedFile =
-      event.dataTransfer.files[0];
+    const droppedFile = event.dataTransfer.files[0];
 
     if (droppedFile) {
       validateAndSetFile(droppedFile);
@@ -193,45 +149,34 @@ function NewAnalysis() {
     }
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setSubmitError(null);
 
     if (!cvFile) {
-      setSubmitError(
-        "Please upload your CV before starting the analysis.",
-      );
+      setSubmitError("Please upload your CV before starting the analysis.");
       return;
     }
 
     if (!candidateName.trim()) {
-      setSubmitError(
-        "Please enter the candidate name.",
-      );
+      setSubmitError("Please enter the candidate name.");
       return;
     }
 
     if (!jobTitle.trim()) {
-      setSubmitError(
-        "Please enter the job title.",
-      );
+      setSubmitError("Please enter the job title.");
       return;
     }
 
     if (jobDescription.trim().length < 20) {
-      setSubmitError(
-        "Please paste a job description of at least 20 characters.",
-      );
+      setSubmitError("Please paste a job description of at least 20 characters.");
       return;
     }
 
-    const abortController =
-      new AbortController();
+    const abortController = new AbortController();
 
-    abortControllerRef.current =
-      abortController;
+    clearAnalysisSession();
+    abortControllerRef.current = abortController;
 
     setLoading(true);
     setCurrentStep(0);
@@ -250,8 +195,7 @@ function NewAnalysis() {
         result,
         jobTitle: jobTitle.trim(),
         companyName: companyName.trim(),
-        jobDescription:
-          jobDescription.trim(),
+        jobDescription: jobDescription.trim(),
         createdAt: new Date().toISOString(),
       });
 
@@ -259,23 +203,16 @@ function NewAnalysis() {
         to: "/analysis-results",
       });
     } catch (error) {
-      if (
-        error instanceof DOMException &&
-        error.name === "AbortError"
-      ) {
+      if (error instanceof DOMException && error.name === "AbortError") {
         return;
       }
 
       if (error instanceof ApiError) {
         setSubmitError(error.message);
       } else if (error instanceof TypeError) {
-        setSubmitError(
-          "The API could not be reached. Make sure the FastAPI server is running.",
-        );
+        setSubmitError("The API could not be reached. Make sure the FastAPI server is running.");
       } else {
-        setSubmitError(
-          "An unexpected error occurred. Please try again.",
-        );
+        setSubmitError("An unexpected error occurred. Please try again.");
       }
     } finally {
       abortControllerRef.current = null;
@@ -292,81 +229,65 @@ function NewAnalysis() {
               <Sparkles className="size-6 animate-pulse" />
             </div>
 
-            <h1 className="mt-6 text-center text-2xl font-semibold">
-              Analyzing your match
-            </h1>
+            <h1 className="mt-6 text-center text-2xl font-semibold">Analyzing your match</h1>
 
             <p className="mt-2 text-center text-sm text-muted-foreground">
-              We’re comparing your CV with the{" "}
-              {jobTitle.trim()} role.
+              We’re comparing your CV with the {jobTitle.trim()} role.
             </p>
 
             <div className="mt-8 space-y-3">
-              {analysisSteps.map(
-                (label, index) => {
-                  const isComplete =
-                    index < currentStep;
-                  const isCurrent =
-                    index === currentStep;
+              {analysisSteps.map((label, index) => {
+                const isComplete = index < currentStep;
+                const isCurrent = index === currentStep;
 
-                  return (
-                    <div
-                      key={label}
-                      className={`flex items-center gap-3 rounded-lg border p-4 transition-all ${
+                return (
+                  <div
+                    key={label}
+                    className={`flex items-center gap-3 rounded-lg border p-4 transition-all ${
+                      isComplete
+                        ? "border-status-found/20 bg-status-found-bg"
+                        : isCurrent
+                          ? "border-primary/30 bg-accent"
+                          : "bg-card opacity-50"
+                    }`}
+                  >
+                    <span
+                      className={`grid size-6 place-items-center rounded-full ${
                         isComplete
-                          ? "border-status-found/20 bg-status-found-bg"
+                          ? "bg-status-found text-primary-foreground"
                           : isCurrent
-                            ? "border-primary/30 bg-accent"
-                            : "bg-card opacity-50"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground"
                       }`}
                     >
-                      <span
-                        className={`grid size-6 place-items-center rounded-full ${
-                          isComplete
-                            ? "bg-status-found text-primary-foreground"
-                            : isCurrent
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-secondary text-muted-foreground"
-                        }`}
-                      >
-                        {isComplete ? (
-                          <Check className="size-3.5" />
-                        ) : (
-                          <span className="text-[11px] font-semibold">
-                            {index + 1}
-                          </span>
-                        )}
-                      </span>
-
-                      <span className="text-sm font-medium">
-                        {label}
-                      </span>
-
-                      {isCurrent && (
-                        <span className="ml-auto size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      {isComplete ? (
+                        <Check className="size-3.5" />
+                      ) : (
+                        <span className="text-[11px] font-semibold">{index + 1}</span>
                       )}
-                    </div>
-                  );
-                },
-              )}
+                    </span>
+
+                    <span className="text-sm font-medium">{label}</span>
+
+                    {isCurrent && (
+                      <span className="ml-auto size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="mt-7 h-2 overflow-hidden rounded-full bg-secondary">
               <div
                 className="h-full rounded-full bg-primary transition-all duration-500"
                 style={{
-                  width: `${
-                    ((currentStep + 1) /
-                      analysisSteps.length) *
-                    100
-                  }%`,
+                  width: `${((currentStep + 1) / analysisSteps.length) * 100}%`,
                 }}
               />
             </div>
 
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              AI analysis can take a little time.
-              Please keep this page open.
+              AI analysis can take a little time. Please keep this page open.
             </p>
           </div>
         </div>
@@ -386,19 +307,16 @@ function NewAnalysis() {
           <div className="grid gap-6 xl:grid-cols-[.88fr_1.12fr]">
             <section className="surface p-5 sm:p-6">
               <div className="mb-5">
-                <h2 className="font-semibold">
-                  CV upload
-                </h2>
+                <h2 className="font-semibold">CV upload</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  We’ll analyze the document you
-                  provide.
+                  We’ll analyze the document you provide.
                 </p>
               </div>
 
               <input
                 ref={inputRef}
                 type="file"
-                accept=".pdf,application/pdf"
+                accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
                 className="hidden"
                 onChange={handleFileChange}
               />
@@ -406,12 +324,8 @@ function NewAnalysis() {
               {!cvFile ? (
                 <button
                   type="button"
-                  onClick={() =>
-                    inputRef.current?.click()
-                  }
-                  onDragOver={(event) =>
-                    event.preventDefault()
-                  }
+                  onClick={() => inputRef.current?.click()}
+                  onDragOver={(event) => event.preventDefault()}
                   onDrop={handleDrop}
                   className="flex min-h-64 w-full flex-col items-center justify-center rounded-lg border border-dashed border-input bg-muted/40 p-8 text-center transition-colors hover:border-primary hover:bg-accent"
                 >
@@ -419,28 +333,22 @@ function NewAnalysis() {
                     <UploadCloud />
                   </span>
 
-                  <span className="mt-4 text-sm font-semibold">
-                    Upload your CV
-                  </span>
+                  <span className="mt-4 text-sm font-semibold">Upload your CV</span>
 
                   <span className="mt-1 text-xs text-muted-foreground">
                     Drag and drop or click to browse
                   </span>
 
                   <span className="mt-4 rounded-md bg-secondary px-2 py-1 text-[11px] font-medium text-muted-foreground">
-                    PDF only · Maximum 5 MB
+                    PDF, PNG or JPG · Maximum 5 MB
                   </span>
                 </button>
               ) : (
                 <div>
                   <button
                     type="button"
-                    onClick={() =>
-                      inputRef.current?.click()
-                    }
-                    onDragOver={(event) =>
-                      event.preventDefault()
-                    }
+                    onClick={() => inputRef.current?.click()}
+                    onDragOver={(event) => event.preventDefault()}
                     onDrop={handleDrop}
                     className="flex min-h-52 w-full flex-col items-center justify-center rounded-lg border border-dashed border-primary/30 bg-accent/60 p-8 text-center"
                   >
@@ -448,13 +356,10 @@ function NewAnalysis() {
                       <Check />
                     </span>
 
-                    <span className="mt-4 text-sm font-semibold">
-                      CV ready for analysis
-                    </span>
+                    <span className="mt-4 text-sm font-semibold">CV ready for analysis</span>
 
                     <span className="mt-1 text-xs text-muted-foreground">
-                      Click or drop another PDF to
-                      replace it
+                      Click or drop another CV file to replace it
                     </span>
                   </button>
 
@@ -464,12 +369,9 @@ function NewAnalysis() {
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {cvFile.name}
-                      </p>
+                      <p className="truncate text-sm font-medium">{cvFile.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatFileSize(cvFile.size)} ·
-                        PDF
+                        {formatFileSize(cvFile.size)} ·{formatFileType(cvFile)}
                       </p>
                     </div>
 
@@ -498,9 +400,7 @@ function NewAnalysis() {
                 <Input
                   value={candidateName}
                   onChange={(event) => {
-                    setCandidateName(
-                      event.target.value,
-                    );
+                    setCandidateName(event.target.value);
                     setSubmitError(null);
                   }}
                   placeholder="e.g. Christos Hadjikyriakou"
@@ -513,12 +413,9 @@ function NewAnalysis() {
 
             <section className="surface p-5 sm:p-6">
               <div className="mb-5">
-                <h2 className="font-semibold">
-                  Job description
-                </h2>
+                <h2 className="font-semibold">Job description</h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Paste the complete listing for the
-                  most useful comparison.
+                  Paste the complete listing for the most useful comparison.
                 </p>
               </div>
 
@@ -528,12 +425,10 @@ function NewAnalysis() {
                   <Input
                     value={jobTitle}
                     onChange={(event) => {
-                      setJobTitle(
-                        event.target.value,
-                      );
+                      setJobTitle(event.target.value);
                       setSubmitError(null);
                     }}
-                    placeholder="e.g. Junior AI Engineer"
+                    placeholder="e.g. Pastry Chef or Junior AI Engineer"
                     maxLength={200}
                     required
                   />
@@ -544,9 +439,7 @@ function NewAnalysis() {
                   <Input
                     value={companyName}
                     onChange={(event) => {
-                      setCompanyName(
-                        event.target.value,
-                      );
+                      setCompanyName(event.target.value);
                       setSubmitError(null);
                     }}
                     placeholder="e.g. Example Company"
@@ -561,9 +454,7 @@ function NewAnalysis() {
                   className="min-h-72 resize-y leading-6"
                   value={jobDescription}
                   onChange={(event) => {
-                    setJobDescription(
-                      event.target.value,
-                    );
+                    setJobDescription(event.target.value);
                     setSubmitError(null);
                   }}
                   placeholder="Paste the complete job description here..."
@@ -576,10 +467,8 @@ function NewAnalysis() {
               <div className="mt-5 flex gap-2.5 rounded-lg bg-info-bg p-3 text-xs leading-5 text-info">
                 <Info className="mt-0.5 size-4 shrink-0" />
                 <p>
-                  Your CV is compared only with
-                  information in your document.
-                  JobMatch AI will never invent
-                  experience or skills.
+                  Your CV is compared only with information in your document. JobMatch AI will never
+                  invent experience or skills.
                 </p>
               </div>
 
@@ -615,18 +504,22 @@ function NewAnalysis() {
   );
 }
 
-function formatFileSize(
-  sizeInBytes: number,
-): string {
+function formatFileSize(sizeInBytes: number): string {
   if (sizeInBytes < 1024 * 1024) {
-    return `${Math.max(
-      1,
-      Math.round(sizeInBytes / 1024),
-    )} KB`;
+    return `${Math.max(1, Math.round(sizeInBytes / 1024))} KB`;
   }
 
-  return `${(
-    sizeInBytes /
-    (1024 * 1024)
-  ).toFixed(1)} MB`;
+  return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatFileType(file: File): string {
+  if (file.type === "application/pdf") {
+    return "PDF";
+  }
+
+  if (file.type === "image/png") {
+    return "PNG";
+  }
+
+  return "JPG";
 }

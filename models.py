@@ -199,6 +199,8 @@ class ApplicationInsights(BaseModel):
     cv_improvement_suggestions: list[
         CVImprovementSuggestion
     ] = Field(default_factory=list)
+    low_alignment: bool = False
+    alignment_message: str = ""
 
 
 class ApplicationAnalysisResult(BaseModel):

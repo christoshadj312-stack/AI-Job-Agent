@@ -30,7 +30,7 @@ export const Route = createFileRoute("/")({
 const steps = [
   {
     title: "Upload your CV",
-    description: "Choose a PDF version of your current CV.",
+    description: "Choose your current CV as a PDF, PNG, or JPG file.",
     icon: FileText,
   },
   {
@@ -65,7 +65,7 @@ function Home() {
             <NewAnalysisButton />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            PDF only · Your CV is analyzed for this session and is not stored.
+            PDF, PNG or JPG · Your CV is analyzed for this session and is not stored.
           </p>
         </section>
 

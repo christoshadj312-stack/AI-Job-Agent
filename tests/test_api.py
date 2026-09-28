@@ -61,13 +61,13 @@ class APITests(unittest.TestCase):
 
     @patch(
         "api.routes.analysis."
-        "analyze_pdf_application"
+        "analyze_uploaded_application"
     )
     def test_analysis_returns_structured_result(
         self,
-        analyze_pdf,
+        analyze_upload,
     ):
-        analyze_pdf.return_value = (
+        analyze_upload.return_value = (
             ApplicationAnalysisResult(
                 candidate_name="Christos",
                 candidate_profile=(
@@ -115,6 +115,50 @@ class APITests(unittest.TestCase):
         self.assertIn(
             "insights",
             response.json(),
+        )
+
+    @patch(
+        "api.routes.analysis."
+        "analyze_uploaded_application"
+    )
+    def test_analysis_accepts_jpeg_upload(
+        self,
+        analyze_upload,
+    ):
+        analyze_upload.return_value = (
+            ApplicationAnalysisResult(
+                candidate_name="Christos",
+                candidate_profile=CandidateProfile(),
+                job_requirements=JobRequirements(),
+                analysis=CVAnalysis(),
+                scores=MatchScores(),
+                insights=ApplicationInsights(),
+            )
+        )
+
+        response = self.client.post(
+            "/api/v1/analyses",
+            data={
+                "candidate_name": "Christos",
+                "job_description": (
+                    "A sufficiently long job description."
+                ),
+            },
+            files={
+                "cv_file": (
+                    "CV.jpg",
+                    b"mock image bytes",
+                    "image/jpeg",
+                )
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        analyze_upload.assert_called_once_with(
+            "Christos",
+            b"mock image bytes",
+            "image/jpeg",
+            "A sufficiently long job description.",
         )
 
 

@@ -42,6 +42,7 @@ def build_provider(
     completions = FakeCompletions(content)
     provider = GroqProvider.__new__(GroqProvider)
     provider.model_name = "openai/gpt-oss-20b"
+    provider.vision_model_name = "qwen/qwen3.6-27b"
     provider.client = SimpleNamespace(
         chat=SimpleNamespace(
             completions=completions
@@ -118,6 +119,7 @@ class GroqProviderTests(unittest.TestCase):
             ai_provider="groq",
             groq_api_key=None,
             groq_model="openai/gpt-oss-20b",
+            groq_vision_model="qwen/qwen3.6-27b",
         )
 
         with patch(
@@ -126,6 +128,31 @@ class GroqProviderTests(unittest.TestCase):
         ):
             with self.assertRaises(AIProviderError):
                 get_ai_provider()
+
+    def test_groq_extracts_text_from_image(self):
+        provider, completions = build_provider(
+            "SKILLS\nPython"
+        )
+
+        result = provider.extract_text_from_image(
+            b"image bytes",
+            "image/png",
+        )
+
+        self.assertEqual(result, "SKILLS\nPython")
+        self.assertEqual(
+            completions.request["model"],
+            "qwen/qwen3.6-27b",
+        )
+        image_url = (
+            completions.request["messages"][0]
+            ["content"][1]["image_url"]["url"]
+        )
+        self.assertTrue(
+            image_url.startswith(
+                "data:image/png;base64,"
+            )
+        )
 
 
 if __name__ == "__main__":

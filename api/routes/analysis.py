@@ -11,7 +11,7 @@ from fastapi import (
 from starlette.concurrency import run_in_threadpool
 
 from ai_service import AIServiceError
-from analysis_service import analyze_pdf_application
+from analysis_service import analyze_uploaded_application
 from cv_parser import CVParserError
 from models import ApplicationAnalysisResult
 from settings import get_settings
@@ -21,6 +21,14 @@ router = APIRouter(
     prefix="/api/v1",
     tags=["analyses"],
 )
+
+
+_ALLOWED_UPLOADS = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
 
 
 @router.post(
@@ -39,32 +47,42 @@ async def create_analysis(
     ],
     cv_file: Annotated[
         UploadFile,
-        File(description="Candidate CV in PDF format"),
+        File(description="Candidate CV as PDF, PNG, JPG, or JPEG"),
     ],
 ) -> ApplicationAnalysisResult:
     filename = cv_file.filename or ""
     content_type = cv_file.content_type or ""
+    suffix = next(
+        (
+            extension
+            for extension in _ALLOWED_UPLOADS
+            if filename.lower().endswith(extension)
+        ),
+        "",
+    )
 
     if (
-        content_type != "application/pdf"
-        or not filename.lower().endswith(".pdf")
+        not suffix
+        or content_type != _ALLOWED_UPLOADS[suffix]
     ):
         await cv_file.close()
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="The CV must be uploaded as a PDF file.",
+            detail=(
+                "The CV must be uploaded as a PDF, PNG, JPG, or JPEG file."
+            ),
         )
 
     max_size = get_settings().max_cv_size_bytes
 
     try:
-        pdf_bytes = await cv_file.read(
+        file_bytes = await cv_file.read(
             max_size + 1
         )
     finally:
         await cv_file.close()
 
-    if len(pdf_bytes) > max_size:
+    if len(file_bytes) > max_size:
         raise HTTPException(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="The uploaded CV exceeds the allowed size.",
@@ -72,9 +90,10 @@ async def create_analysis(
 
     try:
         return await run_in_threadpool(
-            analyze_pdf_application,
+            analyze_uploaded_application,
             candidate_name.strip(),
-            pdf_bytes,
+            file_bytes,
+            content_type,
             job_description.strip(),
         )
     except CVParserError as error:

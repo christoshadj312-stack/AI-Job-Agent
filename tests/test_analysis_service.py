@@ -4,6 +4,7 @@ from unittest.mock import patch
 from analysis_service import (
     _build_insights,
     analyze_application,
+    analyze_uploaded_application,
 )
 from models import (
     CVAnalysis,
@@ -14,6 +15,74 @@ from models import (
 
 
 class AnalysisServiceTests(unittest.TestCase):
+    @patch("analysis_service.analyze_application")
+    @patch("analysis_service.extract_cv_text_from_image")
+    @patch("analysis_service.render_pdf_pages_as_png")
+    @patch("analysis_service.extract_text_from_pdf_bytes")
+    def test_scanned_pdf_uses_image_ocr(
+        self,
+        extract_pdf_text,
+        render_pages,
+        extract_image_text,
+        analyze,
+    ):
+        from cv_parser import CVParserError
+
+        extract_pdf_text.side_effect = CVParserError(
+            "No readable text was found in the PDF."
+        )
+        render_pages.return_value = [
+            b"page one",
+            b"page two",
+        ]
+        extract_image_text.side_effect = [
+            "First page",
+            "Second page",
+        ]
+
+        analyze_uploaded_application(
+            candidate_name="Christos",
+            file_bytes=b"scanned pdf",
+            content_type="application/pdf",
+            job_description="Job description",
+        )
+
+        self.assertEqual(
+            extract_image_text.call_count,
+            2,
+        )
+        analyze.assert_called_once_with(
+            candidate_name="Christos",
+            cv_text="First page\n\nSecond page",
+            job_description="Job description",
+        )
+
+    @patch("analysis_service.analyze_application")
+    @patch("analysis_service.extract_cv_text_from_image")
+    def test_image_upload_uses_ocr_text(
+        self,
+        extract_image_text,
+        analyze,
+    ):
+        extract_image_text.return_value = "Python CV"
+
+        analyze_uploaded_application(
+            candidate_name="Christos",
+            file_bytes=b"image bytes",
+            content_type="image/png",
+            job_description="Job description",
+        )
+
+        extract_image_text.assert_called_once_with(
+            image_bytes=b"image bytes",
+            mime_type="image/png",
+        )
+        analyze.assert_called_once_with(
+            candidate_name="Christos",
+            cv_text="Python CV",
+            job_description="Job description",
+        )
+
     @patch(
         "analysis_service.analyze_cv_with_ai"
     )
@@ -69,8 +138,8 @@ class AnalysisServiceTests(unittest.TestCase):
         self.assertEqual(
             progress,
             [
-                "extracting_job_requirements",
                 "building_candidate_profile",
+                "extracting_job_requirements",
                 "matching_candidate",
             ],
         )
@@ -158,6 +227,37 @@ class AnalysisServiceTests(unittest.TestCase):
         self.assertIn(
             "Otherwise, leave it out",
             suggestion.suggestion,
+        )
+        self.assertTrue(
+            insights.low_alignment
+        )
+
+    def test_low_alignment_ignores_soft_skill_only_match(
+        self,
+    ):
+        analysis = CVAnalysis(
+            technical_skills=[
+                RequirementAnalysis(
+                    requirement="Pastry production",
+                    status="missing",
+                    evidence="No matching skill found",
+                )
+            ],
+            soft_skills=[
+                RequirementAnalysis(
+                    requirement="Teamwork",
+                    status="found",
+                    evidence="Worked with a sales team",
+                )
+            ],
+        )
+
+        insights = _build_insights(analysis)
+
+        self.assertTrue(insights.low_alignment)
+        self.assertIn(
+            "does not contain verified evidence",
+            insights.alignment_message,
         )
 
 

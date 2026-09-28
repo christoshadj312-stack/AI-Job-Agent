@@ -1,10 +1,4 @@
-export type MatchStatus =
-  | "FOUND"
-  | "PARTIAL"
-  | "MISSING"
-  | "found"
-  | "partial"
-  | "missing";
+export type MatchStatus = "FOUND" | "PARTIAL" | "MISSING" | "found" | "partial" | "missing";
 
 export interface Education {
   degree_level: string;
@@ -54,10 +48,8 @@ export interface EducationRequirement {
 
 export interface JobRequirements {
   technical_skills: string[];
-  experience_requirements:
-    ExperienceRequirement[];
-  education_requirements:
-    EducationRequirement[];
+  experience_requirements: ExperienceRequirement[];
+  education_requirements: EducationRequirement[];
   soft_skills: string[];
 }
 
@@ -70,10 +62,8 @@ export interface RequirementMatch {
 
 export interface MatchAnalysis {
   technical_skills: RequirementMatch[];
-  experience_requirements:
-    RequirementMatch[];
-  education_requirements:
-    RequirementMatch[];
+  experience_requirements: RequirementMatch[];
+  education_requirements: RequirementMatch[];
   soft_skills: RequirementMatch[];
 }
 
@@ -85,11 +75,7 @@ export interface MatchScores {
   overall_match: number | null;
 }
 
-export type RequirementCategory =
-  | "technical_skill"
-  | "experience"
-  | "education"
-  | "soft_skill";
+export type RequirementCategory = "technical_skill" | "experience" | "education" | "soft_skill";
 
 export interface MatchInsight {
   category: RequirementCategory;
@@ -110,8 +96,9 @@ export interface CVImprovementSuggestion {
 export interface ApplicationInsights {
   strengths: MatchInsight[];
   gaps: MatchInsight[];
-  cv_improvement_suggestions:
-    CVImprovementSuggestion[];
+  cv_improvement_suggestions: CVImprovementSuggestion[];
+  low_alignment: boolean;
+  alignment_message: string;
 }
 
 export interface ApplicationAnalysisResult {
@@ -144,23 +131,16 @@ interface ErrorResponse {
   detail?: string;
 }
 
-const DEFAULT_API_URL =
-  "http://localhost:8000";
+const DEFAULT_API_URL = "http://localhost:8000";
 
-const configuredApiUrl =
-  import.meta.env["VITE_API_BASE_URL"];
+const configuredApiUrl = import.meta.env["VITE_API_BASE_URL"];
 
-const API_BASE_URL = (
-  configuredApiUrl || DEFAULT_API_URL
-).replace(/\/+$/, "");
+const API_BASE_URL = (configuredApiUrl || DEFAULT_API_URL).replace(/\/+$/, "");
 
 export class ApiError extends Error {
   readonly status: number;
 
-  constructor(
-    message: string,
-    status: number,
-  ) {
+  constructor(message: string, status: number) {
     super(message);
     this.name = "ApiError";
     this.status = status;
@@ -173,41 +153,23 @@ export async function createAnalysis(
 ): Promise<ApplicationAnalysisResult> {
   const formData = new FormData();
 
-  formData.append(
-    "candidate_name",
-    input.candidateName.trim(),
-  );
-  formData.append(
-    "job_description",
-    input.jobDescription.trim(),
-  );
-  formData.append(
-    "cv_file",
-    input.cvFile,
-  );
+  formData.append("candidate_name", input.candidateName.trim());
+  formData.append("job_description", input.jobDescription.trim());
+  formData.append("cv_file", input.cvFile);
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/v1/analyses`,
-    {
-      method: "POST",
-      body: formData,
-      signal: signal ?? null,
-    },
-  );
+  const response = await fetch(`${API_BASE_URL}/api/v1/analyses`, {
+    method: "POST",
+    body: formData,
+    signal: signal ?? null,
+  });
 
   if (!response.ok) {
-    let message =
-      "The analysis could not be completed.";
+    let message = "The analysis could not be completed.";
 
     try {
-      const errorResponse =
-        (await response.json()) as ErrorResponse;
+      const errorResponse = (await response.json()) as ErrorResponse;
 
-      if (
-        typeof errorResponse.detail ===
-          "string" &&
-        errorResponse.detail.trim()
-      ) {
+      if (typeof errorResponse.detail === "string" && errorResponse.detail.trim()) {
         message = errorResponse.detail;
       }
     } catch {
@@ -215,34 +177,26 @@ export async function createAnalysis(
       // the server does not return JSON.
     }
 
-    throw new ApiError(
-      message,
-      response.status,
-    );
+    throw new ApiError(message, response.status);
   }
 
-  return (
-    await response.json()
-  ) as ApplicationAnalysisResult;
+  return (await response.json()) as ApplicationAnalysisResult;
 }
 
 export async function createCoverLetter(
   input: CreateCoverLetterInput,
   signal?: AbortSignal,
 ): Promise<CoverLetterResponse> {
-  const response = await fetch(
-    `${API_BASE_URL}/api/v1/cover-letters`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        analysis: input.analysis,
-        job_title: input.jobTitle.trim(),
-        company_name: input.companyName.trim(),
-      }),
-      signal: signal ?? null,
-    },
-  );
+  const response = await fetch(`${API_BASE_URL}/api/v1/cover-letters`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      analysis: input.analysis,
+      job_title: input.jobTitle.trim(),
+      company_name: input.companyName.trim(),
+    }),
+    signal: signal ?? null,
+  });
 
   if (!response.ok) {
     let message = "The cover letter could not be generated.";

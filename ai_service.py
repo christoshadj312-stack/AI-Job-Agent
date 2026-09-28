@@ -30,6 +30,31 @@ class AIServiceError(Exception):
     """Raised when the local AI service fails."""
 
 
+def extract_cv_text_from_image(
+    image_bytes: bytes,
+    mime_type: str,
+) -> str:
+    try:
+        provider = get_ai_provider()
+        text = provider.extract_text_from_image(
+            image_bytes=image_bytes,
+            mime_type=mime_type,
+        )
+    except AIProviderError as error:
+        raise AIServiceError(
+            "The CV image could not be read. "
+            "Try a clearer image or upload the PDF version."
+        ) from error
+
+    cleaned_text = text.strip()
+    if not cleaned_text:
+        raise AIServiceError(
+            "No readable text was found in the CV image."
+        )
+
+    return cleaned_text
+
+
 def _requirement_text(requirement):
     return getattr(requirement, "original_requirement", requirement)
 
@@ -62,9 +87,12 @@ def extract_job_requirements(
         "You are a strict job requirements extractor. "
         "Read the complete job description before answering. "
         "Return exactly one structured JobRequirements object. "
-        "technical_skills contains explicit programming languages, "
-        "frameworks, libraries, databases, APIs, cloud tools, "
-        "DevOps tools, AI/ML technologies, and other technical skills. "
+        "The technical_skills field represents job-specific hard skills "
+        "for any profession, not only software roles. Extract explicit "
+        "tools, methods, standards, equipment, domain knowledge, and "
+        "practical competencies. Examples include pastry techniques, "
+        "food preparation, HACCP, and kitchen equipment for a pastry role, "
+        "or Python, databases, and machine learning for an AI role. "
         "Each experience requirement is one compound condition with its full "
         "original wording, minimum years, all alternative accepted experience "
         "types, and whether projects explicitly count. "
@@ -225,9 +253,12 @@ def extract_candidate_profile(
         "Read the complete CV before creating the CandidateProfile. "
         "Use only information explicitly supported by the CV. "
         "Never invent information. "
-        "Extract explicit technical skills such as programming languages, "
-        "frameworks, libraries, databases, APIs, AI/ML tools, platforms, "
-        "and software technologies. "
+        "The technical_skills field represents role-specific hard skills "
+        "for any profession. Extract explicit tools, methods, standards, "
+        "equipment, domain knowledge, and practical competencies from the "
+        "CV. This can include pastry techniques, HACCP, kitchen operations, "
+        "or hospitality systems, as well as programming and AI tools when "
+        "they are actually present. "
         "Keep every education record separate. "
         "Keep degree level, field of study, institution, dates, and status "
         "associated with the correct education record. "
@@ -430,9 +461,9 @@ def _run_semantic_batch(
         "Never create decisions for requirements that were not supplied. "
         "Never invent candidate evidence. "
         "\n\n"
-        "TECHNICAL: "
-        "Return found only for the same technology or a clearly equivalent "
-        "technical capability. Related but different technologies are not equivalent. "
+        "ROLE-SPECIFIC HARD SKILLS: "
+        "Return found only for the same skill or a clearly equivalent "
+        "practical capability. Related but different skills are not equivalent. "
         "Use matched_skill_index. Technical requirements should normally be "
         "found or missing, not partial. "
         "\n\n"
@@ -581,7 +612,7 @@ def _analyze_technical(
                     status="found",
                     evidence=equivalent_skill,
                     reason=(
-                        "A verified equivalent technical "
+                        "A verified equivalent role-specific "
                         "skill appears in the CV."
                     ),
                 )
@@ -593,12 +624,12 @@ def _analyze_technical(
                     requirement=requirement,
                     status="missing",
                     evidence=(
-                        "No matching technical "
+                        "No matching role-specific "
                         "skill found in the CV"
                     ),
                     reason=(
                         "No verified matching "
-                        "technical skill was found."
+                        "role-specific skill was found."
                     ),
                 )
             )

@@ -71,3 +71,44 @@ def extract_text_from_pdf_bytes(pdf_bytes):
     return _extract_text_from_document(
         document
     )
+
+
+def render_pdf_pages_as_png(
+    pdf_bytes: bytes,
+    max_pages: int = 5,
+) -> list[bytes]:
+    if not pdf_bytes:
+        raise CVParserError("The uploaded PDF is empty.")
+
+    try:
+        document = pymupdf.open(
+            stream=pdf_bytes,
+            filetype="pdf",
+        )
+    except Exception as error:
+        raise CVParserError(
+            "The PDF file could not be opened."
+        ) from error
+
+    try:
+        if document.page_count == 0:
+            raise CVParserError(
+                "The PDF contains no pages."
+            )
+
+        page_images = []
+        for page_number in range(
+            min(document.page_count, max_pages)
+        ):
+            page = document[page_number]
+            pixmap = page.get_pixmap(
+                dpi=160,
+                alpha=False,
+            )
+            page_images.append(
+                pixmap.tobytes("png")
+            )
+
+        return page_images
+    finally:
+        document.close()

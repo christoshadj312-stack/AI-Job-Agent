@@ -110,6 +110,40 @@ class CoverLetterTests(unittest.TestCase):
             result.text,
         )
         self.assertNotIn("my CV records", result.text)
+        self.assertNotIn("technical background", result.text)
+
+    def test_pastry_skill_uses_role_neutral_wording(self):
+        request = request_with([
+            MatchInsight(
+                category="technical_skill",
+                requirement="HACCP standards",
+                status="found",
+                evidence="HACCP Standards",
+            ),
+        ])
+        request.job_title = "Pastry Chef"
+
+        result = compose_cover_letter(request)
+
+        self.assertIn(
+            "My background includes HACCP standards",
+            result.text,
+        )
+        self.assertNotIn("technical focus", result.text)
+
+    def test_rejects_low_alignment_cover_letter(self):
+        request = request_with([
+            MatchInsight(
+                category="soft_skill",
+                requirement="Teamwork",
+                status="found",
+                evidence="Worked with a team",
+            ),
+        ])
+        request.analysis.insights.low_alignment = True
+
+        with self.assertRaises(NoVerifiedEvidenceError):
+            compose_cover_letter(request)
 
     def test_rejects_analysis_without_verified_evidence(self):
         with self.assertRaises(NoVerifiedEvidenceError):
