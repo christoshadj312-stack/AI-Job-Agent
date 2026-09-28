@@ -403,7 +403,6 @@ function NewAnalysis() {
                     setCandidateName(event.target.value);
                     setSubmitError(null);
                   }}
-                  placeholder="e.g. Christos Hadjikyriakou"
                   maxLength={200}
                   autoComplete="name"
                   required
@@ -428,7 +427,6 @@ function NewAnalysis() {
                       setJobTitle(event.target.value);
                       setSubmitError(null);
                     }}
-                    placeholder="e.g. Pastry Chef or Junior AI Engineer"
                     maxLength={200}
                     required
                   />
@@ -442,7 +440,6 @@ function NewAnalysis() {
                       setCompanyName(event.target.value);
                       setSubmitError(null);
                     }}
-                    placeholder="e.g. Example Company"
                     maxLength={200}
                   />
                 </label>
