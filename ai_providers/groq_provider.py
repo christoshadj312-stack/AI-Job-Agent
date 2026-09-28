@@ -1,4 +1,5 @@
 import base64
+import logging
 import re
 from typing import Any
 
@@ -7,6 +8,9 @@ from ai_providers.base import (
     AIProviderError,
     ResponseModel,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 _UNSUPPORTED_STRICT_SCHEMA_KEYS = {
@@ -133,6 +137,10 @@ class GroqProvider(AIProvider):
             return content.strip()
 
         except Exception as error:
+            logger.exception(
+                "Groq vision request failed for model %s.",
+                self.vision_model_name,
+            )
             raise AIProviderError(
                 "Groq could not read the uploaded CV image."
             ) from error
@@ -185,6 +193,10 @@ class GroqProvider(AIProvider):
             )
 
         except Exception as error:
+            logger.exception(
+                "Groq structured request failed for model %s.",
+                self.model_name,
+            )
             raise AIProviderError(
                 "Groq could not complete the "
                 "structured AI request."
