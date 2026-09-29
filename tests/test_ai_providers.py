@@ -41,7 +41,7 @@ def build_provider(
 ) -> tuple[GroqProvider, FakeCompletions]:
     completions = FakeCompletions(content)
     provider = GroqProvider.__new__(GroqProvider)
-    provider.model_name = "openai/gpt-oss-20b"
+    provider.model_name = "openai/gpt-oss-120b"
     provider.vision_model_name = "qwen/qwen3.8-27b"
     provider.client = SimpleNamespace(
         chat=SimpleNamespace(
@@ -118,7 +118,7 @@ class GroqProviderTests(unittest.TestCase):
         settings = SimpleNamespace(
             ai_provider="groq",
             groq_api_key=None,
-            groq_model="openai/gpt-oss-20b",
+            groq_model="openai/gpt-oss-120b",
             groq_vision_model="qwen/qwen3.8-27b",
         )
 
