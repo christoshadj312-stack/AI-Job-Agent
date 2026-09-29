@@ -72,7 +72,7 @@ def get_settings():
 
     groq_model = os.getenv(
         "GROQ_MODEL",
-        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
     ).strip()
 
     groq_vision_model = os.getenv(
